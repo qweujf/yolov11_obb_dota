@@ -1,0 +1,15 @@
+# 实验特定配置（baseline）
+# 只写与 configs/train/default.yaml 不同的参数
+# 如果所有参数都相同，此文件可以为空或只写注释
+
+# 示例：覆盖某些训练参数
+# train:
+#   epochs: 300
+#   lr0: 0.01
+#   name: "baseline_exp"
+
+# 如果需要指定不同的模型或数据，可以取消注释：
+# model: path/to/custom/model.yaml
+# data: path/to/custom/data.yaml
+
+

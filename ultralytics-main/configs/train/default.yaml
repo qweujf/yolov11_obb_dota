@@ -1,0 +1,72 @@
+task: obb            # 任务类型：detect/segment/classify/pose/obb
+mode: train          # 运行模式
+
+# Train settings
+epochs: 500          # 训练轮数（研究默认更长）
+batch: 4            # 批大小（-1 为AutoBatch）
+imgsz: 1024         # 训练/验证输入尺寸（需为32的倍数，匹配切分尺寸1024）
+save: true           # 保存检查点
+save_period: -1      # 每N轮保存（<1禁用）
+cache: false         # 数据缓存（true/ram/disk/false）
+patience: 100
+device: 0             # 如 0 或 [0,1] 或 cpu
+workers: 4           # Dataloader 线程数（1024图像较大，减少workers避免内存不足）
+project:             # 项目名（可选）
+name:                # 实验名（可选）
+exist_ok: true       # 允许覆盖已有实验目录（研究环境更方便）
+pretrained: true     # 是否使用预训练
+optimizer: SGD       # 优化器（auto/SGD/Adam/AdamW/...）
+verbose: true        # 详细日志
+seed: 42             # 随机种子
+deterministic: true  # 确定性运行
+single_cls: false    # 多类当单类
+rect: false          # 矩形训练/验证
+cos_lr: false        # 余弦学习率
+close_mosaic: 10     # 末轮禁用mosaic（0关闭）
+resume: false        # 断点续训
+amp: true            # AMP 混合精度
+fraction: 1.0        # 训练数据占比
+profile: false       # 导出性能画像
+freeze:              # 冻结层数或层索引
+multi_scale: false   # 多尺度训练
+
+# Val/Test settings
+val: true
+split: val
+save_json: false
+conf:                # 置信度（val默认0.001）
+iou: 0.7
+max_det: 300
+half: false
+dnn: false
+plots: true
+
+# Hyperparameters
+lr0: 0.01            # 初始学习率（SGD=1e-2, Adam=1e-3）
+lrf: 0.01            # 最终学习率比例
+momentum: 0.937
+weight_decay: 0.0005
+warmup_epochs: 3.0
+warmup_momentum: 0.8
+warmup_bias_lr: 0.1
+box: 7.5
+cls: 0.5
+dfl: 1.5
+nbs: 64
+hsv_h: 0.015
+hsv_s: 0.7
+hsv_v: 0.4
+degrees: 0.0
+translate: 0.1
+scale: 0.5
+shear: 0.0
+perspective: 0.0
+flipud: 0.0
+fliplr: 0.5
+bgr: 0.0
+mosaic: 1.0
+mixup: 0.0
+cutmix: 0.0
+copy_paste: 0.0
+copy_paste_mode: "flip"
+

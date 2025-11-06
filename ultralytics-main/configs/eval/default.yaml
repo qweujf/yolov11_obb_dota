@@ -1,0 +1,5 @@
+conf_thres: 0.25
+iou_thres: 0.50
+save_json: true
+
+
