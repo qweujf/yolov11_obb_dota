@@ -4,6 +4,10 @@ import yaml
 from pathlib import Path
 from typing import Any, Dict, Optional
 
+# 添加项目根目录到 Python 路径
+project_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(project_root))
+
 # 设置环境变量禁用自动下载（必须在导入 YOLO 之前）
 os.environ["YOLO_OFFLINE"] = "True"
 

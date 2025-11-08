@@ -8,7 +8,7 @@
 # 1. 在学校电脑上：提交并推送代码
 git add .
 git commit -m "你的修改说明"
-git commit -m "mca2"
+git commit -m "mca3"
 git push
 
 # 2. 在公司电脑上：拉取最新代码

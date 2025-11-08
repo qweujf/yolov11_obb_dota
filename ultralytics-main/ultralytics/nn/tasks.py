@@ -1680,8 +1680,19 @@ def parse_model(d, ch, verbose=True):
         )  # get module
         for j, a in enumerate(args):
             if isinstance(a, str):
-                with contextlib.suppress(ValueError):
-                    args[j] = locals()[a] if a in locals() else ast.literal_eval(a)
+                with contextlib.suppress(ValueError, SyntaxError):
+                    # 尝试从 locals 中获取，如果失败则尝试 literal_eval
+                    # 对于 MCAttention 等模块，列表参数已经是正确格式，不需要解析
+                    if a in locals():
+                        args[j] = locals()[a]
+                    else:
+                        # 跳过对列表/元组字符串的解析，因为它们可能包含嵌套结构
+                        # 如果 literal_eval 失败，保持原值（可能是已经解析好的列表）
+                        try:
+                            args[j] = ast.literal_eval(a)
+                        except (ValueError, SyntaxError):
+                            # 如果解析失败，保持原值（可能是已经解析好的对象）
+                            pass
         n = n_ = max(round(n * depth), 1) if n > 1 else n  # depth gain
         if m in base_modules:
             c1, c2 = ch[f], args[0]
