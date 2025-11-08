@@ -10,9 +10,10 @@
    - 模型配置：`configs/model/yolov11_obb.yaml`
    - 实验目录：`experiments/baseline/`
 
-2. **mca_attention** - 使用完整 MCAttention 的增强版模型
-   - 模型配置：`configs/model/yolo11-obb-enhanced.yaml`
+2. **mca_attention** - 仅使用 MCAttention 的模型（消融实验）
+   - 模型配置：`configs/model/yolo11-obb-mca-only.yaml`
    - 实验目录：`experiments/mca_attention/`
+   - **注意**：此配置仅包含 MCAttention（backbone 中），不包含 AdaptiveFPN，用于验证 MCAttention 的独立效果
 
 ## 使用方法
 

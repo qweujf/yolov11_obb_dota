@@ -61,7 +61,7 @@ def analyze_model_complexity(exp_name: str, imgsz: int = 1024) -> Optional[Dict]
     if exp_name == "baseline":
         model_path = repo_root / "configs" / "model" / "yolov11_obb.yaml"
     elif exp_name == "mca_attention":
-        model_path = repo_root / "configs" / "model" / "yolo11-obb-enhanced.yaml"
+        model_path = repo_root / "configs" / "model" / "yolo11-obb-mca-only.yaml"
     else:
         return None
     

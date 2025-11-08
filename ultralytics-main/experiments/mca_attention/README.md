@@ -57,7 +57,8 @@ src/research/nn/modules/
 └── __init__.py               # 模块注册
 
 configs/model/
-└── yolo11-obb-enhanced.yaml  # 增强版模型配置
+├── yolo11-obb-enhanced.yaml  # 完整增强版模型（MCAttention + AdaptiveFPN）
+└── yolo11-obb-mca-only.yaml  # 仅 MCAttention 模型（用于消融实验）
 
 experiments/mca_attention/
 ├── config.yaml               # 实验配置（覆盖默认参数）
@@ -76,11 +77,13 @@ python test_enhanced_model.py
 ### 2. 训练 MCAttention 模型
 按照项目规则，训练脚本应该从 `configs/train/default.yaml` 加载默认配置，然后用 `experiments/mca_attention/config.yaml` 覆盖差异化参数。
 
+**注意**：本实验使用 `yolo11-obb-mca-only.yaml`，仅包含 MCAttention 模块（不包含 AdaptiveFPN），用于验证 MCAttention 的独立效果。
+
 ```python
 from ultralytics import YOLO
 
-# 使用 MCAttention 模型
-model = YOLO('configs/model/yolo11-obb-enhanced.yaml')
+# 使用仅包含 MCAttention 的模型（消融实验）
+model = YOLO('configs/model/yolo11-obb-mca-only.yaml')
 
 # 开始训练（配置从 configs/train/default.yaml 和 experiments/mca_attention/config.yaml 加载）
 results = model.train(

@@ -70,8 +70,8 @@ def test_enhanced_model():
     print("🔍 测试 MCAttention YOLOv11-OBB 模型...")
     
     try:
-        # 加载 MCAttention 模型（使用新的配置文件路径）
-        model_path = project_root / 'configs' / 'model' / 'yolo11-obb-enhanced.yaml'
+        # 加载 MCAttention 模型（仅包含 MCAttention，不包含 AdaptiveFPN）
+        model_path = project_root / 'configs' / 'model' / 'yolo11-obb-mca-only.yaml'
         model = YOLO(str(model_path))
         
         print(f"模型加载成功: {model_path}")
@@ -106,7 +106,7 @@ def test_model_parameters():
     print("🔍 测试模型参数...")
     
     try:
-        model_path = project_root / 'configs' / 'model' / 'yolo11-obb-enhanced.yaml'
+        model_path = project_root / 'configs' / 'model' / 'yolo11-obb-mca-only.yaml'
         model = YOLO(str(model_path))
         
         # 计算参数数量
