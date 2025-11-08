@@ -233,20 +233,30 @@ class MCAttention(nn.Module):
     def __init__(self, c1: int, c2: int, *args, **kwargs):
         super().__init__()
         # 处理位置参数：scales, reduction, num_heads
-        # YAML格式: [c1, c2, scales, reduction, num_heads]
+        # parse_model 会重新构建 args 为 [c1, c2, *args[1:]]
+        # 所以如果 YAML 是 [256, (3,5,7), 16, 8]，实际调用时 args = [c1, 256, [3,5,7], 16, 8]
+        # 注意：YAML中的元组会被解析为列表，需要转换
         scales = (3, 5, 7)  # 默认值
         reduction = 16
         num_heads = 8
         
-        if len(args) >= 1:
-            scales = args[0] if isinstance(args[0], tuple) else scales
-        if len(args) >= 2:
-            reduction = args[1] if isinstance(args[1], int) else reduction
-        if len(args) >= 3:
-            num_heads = args[2] if isinstance(args[2], int) else num_heads
+        # 解析位置参数：按顺序查找 scales（列表/元组）、reduction（小整数）、num_heads（小整数）
+        for arg in args:
+            if isinstance(arg, (list, tuple)) and all(isinstance(x, int) for x in arg):
+                # 这是 scales 参数
+                scales = tuple(arg)
+            elif isinstance(arg, int):
+                if arg < 100:
+                    # 小整数，可能是 reduction 或 num_heads
+                    if reduction == 16:  # 如果 reduction 还是默认值，这个是 reduction
+                        reduction = arg
+                    elif num_heads == 8:  # 如果 reduction 已设置，这个是 num_heads
+                        num_heads = arg
         
         # 从 kwargs 中提取参数（优先级更高）
-        scales = kwargs.get('scales', scales)
+        if 'scales' in kwargs:
+            scales_val = kwargs['scales']
+            scales = tuple(scales_val) if isinstance(scales_val, (list, tuple)) else scales
         reduction = kwargs.get('reduction', reduction)
         num_heads = kwargs.get('num_heads', num_heads)
         
