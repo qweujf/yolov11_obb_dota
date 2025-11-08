@@ -1680,19 +1680,26 @@ def parse_model(d, ch, verbose=True):
         )  # get module
         for j, a in enumerate(args):
             if isinstance(a, str):
-                with contextlib.suppress(ValueError, SyntaxError):
-                    # 尝试从 locals 中获取，如果失败则尝试 literal_eval
-                    # 对于 MCAttention 等模块，列表参数已经是正确格式，不需要解析
+                # 尝试从 locals 中获取，如果失败则尝试 literal_eval
+                # 对于 MCAttention 等模块，列表参数可能已经是正确格式，不需要解析
+                try:
                     if a in locals():
                         args[j] = locals()[a]
+                    elif a == "None":
+                        # 特殊处理 None 字符串
+                        args[j] = None
                     else:
-                        # 跳过对列表/元组字符串的解析，因为它们可能包含嵌套结构
-                        # 如果 literal_eval 失败，保持原值（可能是已经解析好的列表）
-                        try:
+                        # 尝试解析字符串，但如果失败则保持原值
+                        # 这对于嵌套列表（如 [3, 5, 7]）很重要，因为它们可能被解析为字符串
+                        # 检查字符串是否看起来像是一个可解析的表达式
+                        if a.strip().startswith(('(', '[', '{', '"', "'")):
                             args[j] = ast.literal_eval(a)
-                        except (ValueError, SyntaxError):
-                            # 如果解析失败，保持原值（可能是已经解析好的对象）
-                            pass
+                        # 否则保持原值，让模块自己处理
+                except (ValueError, SyntaxError) as e:
+                    # 如果解析失败，保持原值（可能是已经解析好的对象，或者是无法解析的字符串）
+                    # 这种情况下，参数会在后续处理中被模块自己处理
+                    # 对于 MCAttention 等自定义模块，它们会自己处理参数格式
+                    pass
         n = n_ = max(round(n * depth), 1) if n > 1 else n  # depth gain
         if m in base_modules:
             c1, c2 = ch[f], args[0]
