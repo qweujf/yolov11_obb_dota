@@ -1,0 +1,14 @@
+# MCAttention 模型实验配置
+# 只写与 configs/train/default.yaml 不同的参数
+
+# 使用 MCAttention 增强版模型
+model: configs/model/yolo11-obb-enhanced.yaml
+
+# 实验名称
+name: mca_attention
+
+# 如果需要覆盖其他训练参数，可以在这里添加
+# train:
+#   epochs: 300
+#   lr0: 0.01
+

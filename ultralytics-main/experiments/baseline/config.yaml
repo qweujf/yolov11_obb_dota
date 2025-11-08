@@ -1,15 +1,14 @@
-# 实验特定配置（baseline）
-# 只写与 configs/train/default.yaml 不同的参数
-# 如果所有参数都相同，此文件可以为空或只写注释
+# Baseline 实验配置
+# 使用原始 YOLO11-OBB 模型（无 MCAttention）
 
-# 示例：覆盖某些训练参数
+# 实验名称
+name: baseline
+
+# 使用原始模型配置（不指定则使用默认 yolov11_obb.yaml）
+# model: configs/model/yolov11_obb.yaml
+
+# 如果需要覆盖其他训练参数，可以在这里添加
 # train:
 #   epochs: 300
 #   lr0: 0.01
-#   name: "baseline_exp"
-
-# 如果需要指定不同的模型或数据，可以取消注释：
-# model: path/to/custom/model.yaml
-# data: path/to/custom/data.yaml
-
 

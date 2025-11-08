@@ -101,15 +101,53 @@ from .transformer import (
     TransformerEncoderLayer,
     TransformerLayer,
 )
-from .mca_attention import (
-    MCAttention,
-    AdaptiveAttention,
-    SCAttention,
-)
-from .afpn import (
-    AFPN,
-    AdaptiveFPN,
-)
+# 从 research 目录导入自定义模块（保持兼容性）
+try:
+    import sys
+    from pathlib import Path
+    # 添加 research 模块到路径
+    research_path = Path(__file__).parent.parent.parent.parent / "src" / "research"
+    if research_path.exists():
+        sys.path.insert(0, str(research_path.parent))
+        from research.nn.modules.mca_attention import (
+            MCAttention,
+            AdaptiveAttention,
+            SCAttention,
+        )
+        from research.nn.modules.afpn import (
+            AFPN,
+            AdaptiveFPN,
+        )
+    else:
+        # 如果 research 目录不存在，尝试从本地导入（向后兼容）
+        from .mca_attention import (
+            MCAttention,
+            AdaptiveAttention,
+            SCAttention,
+        )
+        from .afpn import (
+            AFPN,
+            AdaptiveFPN,
+        )
+except ImportError:
+    # 如果导入失败，尝试从本地导入（向后兼容）
+    try:
+        from .mca_attention import (
+            MCAttention,
+            AdaptiveAttention,
+            SCAttention,
+        )
+        from .afpn import (
+            AFPN,
+            AdaptiveFPN,
+        )
+    except ImportError:
+        # 如果都失败，定义占位符类
+        MCAttention = None
+        AdaptiveAttention = None
+        SCAttention = None
+        AFPN = None
+        AdaptiveFPN = None
 
 __all__ = (
     "Conv",
