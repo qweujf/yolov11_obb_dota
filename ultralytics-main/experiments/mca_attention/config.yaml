@@ -7,8 +7,14 @@ model: configs/model/yolo11-obb-mca-only.yaml
 # 实验名称
 name: mca_attention
 
+# 本地权重文件路径（相对于项目根目录，或绝对路径）
+# 如果指定，将使用此权重文件而不是下载
+# 例如: weights: yolo11n.pt 或 weights: /path/to/your/weights.pt
+weights: D:\code\yolov11_obb_dota\ultralytics-main\yolo11n.pt
+
 # 如果需要覆盖其他训练参数，可以在这里添加
 # train:
 #   epochs: 300
 #   lr0: 0.01
+#   pretrained: false  # 如果不想使用预训练权重，设置为 false
 

@@ -7,7 +7,6 @@
 ```bash
 # 1. 在学校电脑上：提交并推送代码
 git add .
-git commit -m "你的修改说明"
 git commit -m "mca3"
 git push
 

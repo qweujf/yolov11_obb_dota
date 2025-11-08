@@ -127,6 +127,32 @@ def main() -> None:
     # 7. 构建模型
     model = YOLO(model_path)
     
+    # 7.1 如果配置中指定了本地权重文件，加载它（避免下载）
+    if "weights" in exp_cfg and exp_cfg["weights"]:
+        weights_path = Path(exp_cfg["weights"]).expanduser()
+        if not weights_path.is_absolute():
+            weights_path = repo_root / weights_path
+        if weights_path.exists():
+            print(f"✅ 加载本地权重文件: {weights_path}")
+            # 加载权重（只加载兼容的层）
+            try:
+                model.load(str(weights_path), verbose=False)
+                cfg["pretrained"] = False  # 禁用自动下载
+            except Exception as e:
+                print(f"⚠️ 警告：加载权重文件失败: {e}，将从头训练")
+        else:
+            print(f"⚠️ 警告：权重文件不存在: {weights_path}，将从头训练")
+    elif cfg.get("pretrained", True):
+        # 检查是否有默认的本地权重文件
+        default_weights = repo_root / "yolo11n.pt"
+        if default_weights.exists():
+            print(f"✅ 使用默认本地权重文件: {default_weights}")
+            try:
+                model.load(str(default_weights), verbose=False)
+                cfg["pretrained"] = False
+            except Exception as e:
+                print(f"⚠️ 警告：加载默认权重文件失败: {e}")
+    
     # 8. 设置 data 路径（训练时必需，必须在构建模型之后）
     cfg["data"] = data_path
     
