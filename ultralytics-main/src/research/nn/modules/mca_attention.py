@@ -109,54 +109,24 @@ class MultiScaleCrossAxisAttention(nn.Module):
         attention_weights = self.attention_conv(fused_features)
         attention_weights = torch.sigmoid(attention_weights)
         
-        # 5. 多头注意力机制（使用高效实现，避免大矩阵乘法导致的内存爆炸）
-        # 对于大特征图，使用下采样或通道注意力来避免计算 H*W x H*W 的注意力矩阵
+        # 5. 轻量级注意力机制（优化版本，大幅减少计算量）
+        # 使用通道注意力 + 简化的空间注意力，完全避免大矩阵乘法
         q = self.q_conv(x)  # [B, C, H, W]
         k = self.k_conv(x)  # [B, C, H, W]
         v = self.v_conv(x)  # [B, C, H, W]
         
-        # 如果特征图太大（H*W > 64*64），使用下采样后的特征图计算注意力
-        # 这样可以大幅减少内存使用
-        if H * W > 64 * 64:
-            # 下采样到较小尺寸计算注意力
-            scale_factor = max(H // 64, W // 64, 1)
-            q_small = F.avg_pool2d(q, kernel_size=scale_factor, stride=scale_factor)  # [B, C, H', W']
-            k_small = F.avg_pool2d(k, kernel_size=scale_factor, stride=scale_factor)
-            v_small = F.avg_pool2d(v, kernel_size=scale_factor, stride=scale_factor)
-            H_small, W_small = q_small.shape[2], q_small.shape[3]
-            
-            # 在小特征图上计算注意力
-            q_small = q_small.view(B, self.num_heads, self.head_dim, H_small * W_small)  # [B, num_heads, head_dim, H'W']
-            k_small = k_small.view(B, self.num_heads, self.head_dim, H_small * W_small)
-            v_small = v_small.view(B, self.num_heads, self.head_dim, H_small * W_small)
-            
-            # 计算注意力分数
-            q_small = q_small.transpose(-2, -1)  # [B, num_heads, H'W', head_dim]
-            attn_scores = torch.matmul(q_small, k_small) / (self.head_dim ** 0.5)  # [B, num_heads, H'W', H'W']
-            attn_weights = F.softmax(attn_scores, dim=-1)
-            
-            # 应用注意力
-            attn_output_small = torch.matmul(attn_weights, v_small.transpose(-2, -1))  # [B, num_heads, H'W', head_dim]
-            attn_output_small = attn_output_small.transpose(-2, -1).contiguous()  # [B, num_heads, head_dim, H'W']
-            attn_output_small = attn_output_small.view(B, C, H_small, W_small)
-            
-            # 上采样回原始尺寸
-            attn_output = F.interpolate(attn_output_small, size=(H, W), mode='bilinear', align_corners=False)
-        else:
-            # 对于较小的特征图，使用原始的空间注意力
-            q = q.view(B, self.num_heads, self.head_dim, H * W)  # [B, num_heads, head_dim, HW]
-            k = k.view(B, self.num_heads, self.head_dim, H * W)
-            v = v.view(B, self.num_heads, self.head_dim, H * W)
-            
-            # 计算注意力分数
-            q = q.transpose(-2, -1)  # [B, num_heads, HW, head_dim]
-            attn_scores = torch.matmul(q, k) / (self.head_dim ** 0.5)  # [B, num_heads, HW, HW]
-            attn_weights = F.softmax(attn_scores, dim=-1)
-            
-            # 应用注意力
-            attn_output = torch.matmul(attn_weights, v.transpose(-2, -1))  # [B, num_heads, HW, head_dim]
-            attn_output = attn_output.transpose(-2, -1).contiguous()  # [B, num_heads, head_dim, HW]
-            attn_output = attn_output.view(B, C, H, W)
+        # 方法1: 通道注意力（轻量级，O(C)复杂度）
+        q_pool = F.adaptive_avg_pool2d(q, 1).squeeze(-1).squeeze(-1)  # [B, C]
+        k_pool = F.adaptive_avg_pool2d(k, 1).squeeze(-1).squeeze(-1)  # [B, C]
+        channel_attn = torch.sigmoid(torch.sum(q_pool * k_pool, dim=1, keepdim=True))  # [B, 1]
+        
+        # 方法2: 简化的空间注意力（使用逐元素乘积代替矩阵乘法，O(C*H*W)复杂度）
+        # 对于所有特征图大小，都使用这种轻量级方法，避免 O(H*W*H*W) 的复杂度
+        # 使用逐通道的点积作为空间注意力权重
+        spatial_attn = torch.sigmoid((q * k).sum(dim=1, keepdim=True) / (C ** 0.5))  # [B, 1, H, W]
+        
+        # 结合通道和空间注意力
+        attn_output = v * spatial_attn * channel_attn.view(B, 1, 1, 1)
         
         # 6. 残差连接和输出
         output = x + attn_output * attention_weights
