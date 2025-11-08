@@ -73,10 +73,19 @@ def main() -> None:
             if key != "train":
                 exp_cfg[key] = exp_cfg_raw[key]
     
-    # 3. 合并配置（实验配置覆盖默认配置）
+    # 3. 处理权重文件路径（如果指定了，从 exp_cfg 中提取并移除，避免传递到训练配置）
+    weights_path = None
+    if "weights" in exp_cfg and exp_cfg["weights"]:
+        weights_path = Path(exp_cfg["weights"]).expanduser()
+        if not weights_path.is_absolute():
+            weights_path = repo_root / weights_path
+        # 从 exp_cfg 中移除 weights，避免传递到训练配置
+        del exp_cfg["weights"]
+    
+    # 4. 合并配置（实验配置覆盖默认配置）
     cfg = merge_configs(default_cfg, exp_cfg)
     
-    # 4. 处理模型路径（优先使用实验配置中的模型）
+    # 5. 处理模型路径（优先使用实验配置中的模型）
     model_path: str = ""
     if "model" in exp_cfg and exp_cfg["model"]:
         # 实验配置中指定了模型
@@ -96,7 +105,7 @@ def main() -> None:
     if Path(model_path).suffix == ".pt" and Path(model_path).exists():
         cfg["pretrained"] = False
     
-    # 5. 处理数据路径
+    # 6. 处理数据路径
     if "data" in exp_cfg and exp_cfg["data"]:
         data_path = str((repo_root / exp_cfg["data"]).expanduser().resolve())
     else:
@@ -108,7 +117,7 @@ def main() -> None:
     
     print(f"✅ 数据配置: {data_path}")
     
-    # 6. 清理可能损坏的缓存文件
+    # 7. 清理可能损坏的缓存文件
     data_cfg = load_yaml_config(Path(data_path))
     if data_cfg and "path" in data_cfg:
         data_root = Path(data_cfg["path"])
@@ -124,39 +133,35 @@ def main() -> None:
                         cache_file.unlink()
                         print(f"  ✅ 已删除损坏的缓存: {cache_file.name}")
     
-    # 7. 构建模型
+    # 8. 构建模型
     model = YOLO(model_path)
     
-    # 7.1 如果配置中指定了本地权重文件，加载它（避免下载）
-    if "weights" in exp_cfg and exp_cfg["weights"]:
-        weights_path = Path(exp_cfg["weights"]).expanduser()
-        if not weights_path.is_absolute():
-            weights_path = repo_root / weights_path
-        if weights_path.exists():
-            print(f"✅ 加载本地权重文件: {weights_path}")
-            # 加载权重（只加载兼容的层）
-            try:
-                model.load(str(weights_path), verbose=False)
-                cfg["pretrained"] = False  # 禁用自动下载
-            except Exception as e:
-                print(f"⚠️ 警告：加载权重文件失败: {e}，将从头训练")
-        else:
-            print(f"⚠️ 警告：权重文件不存在: {weights_path}，将从头训练")
+    # 8.1 如果配置中指定了本地权重文件，加载它（避免下载）
+    if weights_path and weights_path.exists():
+        print(f"✅ 加载本地权重文件: {weights_path}")
+        # 加载权重（只加载兼容的层）
+        try:
+            model.load(str(weights_path))
+            cfg["pretrained"] = False  # 禁用自动下载
+        except Exception as e:
+            print(f"⚠️ 警告：加载权重文件失败: {e}，将从头训练")
+    elif weights_path:
+        print(f"⚠️ 警告：权重文件不存在: {weights_path}，将从头训练")
     elif cfg.get("pretrained", True):
         # 检查是否有默认的本地权重文件
         default_weights = repo_root / "yolo11n.pt"
         if default_weights.exists():
             print(f"✅ 使用默认本地权重文件: {default_weights}")
             try:
-                model.load(str(default_weights), verbose=False)
+                model.load(str(default_weights))
                 cfg["pretrained"] = False
             except Exception as e:
                 print(f"⚠️ 警告：加载默认权重文件失败: {e}")
     
-    # 8. 设置 data 路径（训练时必需，必须在构建模型之后）
+    # 9. 设置 data 路径（训练时必需，必须在构建模型之后）
     cfg["data"] = data_path
     
-    # 9. 打印使用的关键配置（用于确认）
+    # 10. 打印使用的关键配置（用于确认）
     print("\n" + "="*60)
     print("📋 训练配置摘要")
     print("="*60)
@@ -166,7 +171,7 @@ def main() -> None:
             print(f"  {key}: {cfg[key]}")
     print("="*60 + "\n")
     
-    # 10. 开始训练（所有参数从配置读取）
+    # 11. 开始训练（所有参数从配置读取）
     results = model.train(**cfg)
 
     # 打印保存目录与关键结果摘要
