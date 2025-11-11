@@ -2,7 +2,7 @@ task: obb            # 任务类型：detect/segment/classify/pose/obb
 mode: train          # 运行模式
 
 # Train settings
-epochs: 500          # 训练轮数（研究默认更长）
+epochs: 300          # 训练轮数（研究默认更长）
 batch: 4            # 批大小（-1 为AutoBatch）
 imgsz: 1024         # 训练/验证输入尺寸（需为32的倍数，匹配切分尺寸1024）
 save: true           # 保存检查点
