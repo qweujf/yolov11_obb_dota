@@ -59,6 +59,7 @@ from ultralytics.nn.modules import (
     SCAttention,
     AFPN,
     AdaptiveFPN,
+    SFE_DRB,
     Pose,
     RepC3,
     RepConv,
@@ -1649,6 +1650,7 @@ def parse_model(d, ch, verbose=True):
             MCAttention,
             AdaptiveAttention,
             SCAttention,
+            SFE_DRB,
         }
     )
     repeat_modules = frozenset(  # modules with 'repeat' arguments

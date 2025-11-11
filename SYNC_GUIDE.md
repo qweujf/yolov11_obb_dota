@@ -7,7 +7,7 @@
 ```bash
 # 1. 在学校电脑上：提交并推送代码
 git add .
-git commit -m "mca3"
+git commit -m "SFE_DRB"
 git push
 
 # 2. 在公司电脑上：拉取最新代码

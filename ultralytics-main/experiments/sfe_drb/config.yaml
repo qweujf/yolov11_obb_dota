@@ -1,0 +1,16 @@
+# SFE-DRB 模型实验配置（基于 baseline + SFE-DRB）
+# 只写与 configs/train/default.yaml 不同的参数
+
+model: configs/model/yolo11-obb-sfe-drb.yaml
+name: sfe_drb
+
+# 本地权重文件（如需使用本地预训练）
+# 请按实际路径修改
+weights: D:\code\yolov11_obb_dota\ultralytics-main\yolo11n.pt
+
+# 可按需覆盖其他训练参数
+# train:
+#   epochs: 300
+#   lr0: 0.01
+#   pretrained: false
+

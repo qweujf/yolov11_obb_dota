@@ -1,3 +1,4 @@
+from .sfe_drb import SFE_DRB
 # Research custom modules for YOLOv11-OBB
 from .mca_attention import (
     MCAttention,

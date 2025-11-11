@@ -118,6 +118,7 @@ try:
             AFPN,
             AdaptiveFPN,
         )
+        from research.nn.modules.sfe_drb import SFE_DRB
     else:
         # 如果 research 目录不存在，尝试从本地导入（向后兼容）
         from .mca_attention import (
@@ -129,6 +130,7 @@ try:
             AFPN,
             AdaptiveFPN,
         )
+        from .sfe_drb import SFE_DRB
 except ImportError:
     # 如果导入失败，尝试从本地导入（向后兼容）
     try:
@@ -231,4 +233,5 @@ __all__ = (
     "SCAttention",
     "AFPN",
     "AdaptiveFPN",
+    "SFE_DRB",
 )
