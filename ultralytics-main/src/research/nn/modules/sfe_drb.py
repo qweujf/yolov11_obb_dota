@@ -82,7 +82,7 @@ class SFE_DRB(nn.Module):
                 hr_a = hr
             else:
                 key = str(hr_c)
-                align = self.align_bank.get(key, None)
+                align = self.align_bank[key] if key in self.align_bank else None
                 if align is None:
                     align = Conv(hr_c, y.shape[1], k=1, s=1, act=True)
                     self.align_bank[key] = align
