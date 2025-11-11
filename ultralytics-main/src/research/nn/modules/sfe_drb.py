@@ -39,8 +39,10 @@ class SFE_DRB(nn.Module):
         self.ddp_dw3 = DWConv(c1, hidden, k=3, s=1, d=3, act=True)
         self.ddp_fuse = Conv(hidden * 3, hidden, k=1, s=1, act=True)
 
-        # Align for high-resolution input
-        self.align = Conv(c1, hidden, k=1, s=1, act=True)
+        # Align for high-resolution input (channel-adaptive)
+        # 默认一个与 c1 匹配的对齐层，并在前向时按需为不同通道数的 hr 动态创建并缓存
+        self.align_default = Conv(c1, hidden, k=1, s=1, act=True)
+        self.align_bank = nn.ModuleDict()
 
         # Gate generator: squeeze -> 1x1 -> sigmoid (scalar per spatial position via broadcast)
         self.gate_gen = nn.Sequential(
@@ -73,7 +75,18 @@ class SFE_DRB(nn.Module):
             # spatial match
             if hr.shape[-2:] != x.shape[-2:]:
                 hr = F.interpolate(hr, size=x.shape[-2:], mode="nearest")
-            hr_a = self.align(hr)
+            # channel match: pick or build align layer for current hr channels
+            hr_c = hr.shape[1]
+            if hr_c == y.shape[1]:
+                # already same channels as hidden, use identity projection
+                hr_a = hr
+            else:
+                key = str(hr_c)
+                align = self.align_bank.get(key, None)
+                if align is None:
+                    align = Conv(hr_c, y.shape[1], k=1, s=1, act=True)
+                    self.align_bank[key] = align
+                hr_a = align(hr)
             g = self.gate_gen(torch.cat([y, hr_a], dim=1))  # [B,1,1,1]
             y = y + g * hr_a
 
