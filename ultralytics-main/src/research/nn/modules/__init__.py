@@ -1,4 +1,5 @@
 from .sfe_drb import SFE_DRB
+from .c3k2_roam import C3k2_ROAM
 # Research custom modules for YOLOv11-OBB
 from .mca_attention import (
     MCAttention,
@@ -28,5 +29,7 @@ __all__ = (
     "AdaptiveFeatureFusion",
     "RotatedAwareFPN",
     "MultiScaleFeatureExtractor",
+    "SFE_DRB",
+    "C3k2_ROAM",
 )
 

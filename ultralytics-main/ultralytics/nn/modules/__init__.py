@@ -119,6 +119,7 @@ try:
             AdaptiveFPN,
         )
         from research.nn.modules.sfe_drb import SFE_DRB
+        from research.nn.modules.c3k2_roam import C3k2_ROAM
     else:
         # 如果 research 目录不存在，尝试从本地导入（向后兼容）
         from .mca_attention import (
@@ -131,6 +132,7 @@ try:
             AdaptiveFPN,
         )
         from .sfe_drb import SFE_DRB
+        from .c3k2_roam import C3k2_ROAM
 except ImportError:
     # 如果导入失败，尝试从本地导入（向后兼容）
     try:
@@ -143,6 +145,8 @@ except ImportError:
             AFPN,
             AdaptiveFPN,
         )
+        from .sfe_drb import SFE_DRB
+        from .c3k2_roam import C3k2_ROAM
     except ImportError:
         # 如果都失败，定义占位符类
         MCAttention = None
@@ -150,6 +154,8 @@ except ImportError:
         SCAttention = None
         AFPN = None
         AdaptiveFPN = None
+        SFE_DRB = None
+        C3k2_ROAM = None
 
 __all__ = (
     "Conv",
@@ -234,4 +240,5 @@ __all__ = (
     "AFPN",
     "AdaptiveFPN",
     "SFE_DRB",
+    "C3k2_ROAM",
 )

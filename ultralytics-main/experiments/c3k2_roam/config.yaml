@@ -1,0 +1,15 @@
+# C3k2_ROAM 实验配置（基于 YOLO11-OBB + SFE-DRB + C3k2_ROAM）
+# 只写与 configs/train/default.yaml 不同的参数
+
+model: configs/model/yolo11-obb-sfe-drb.yaml
+name: c3k2_roam
+
+# 如需加载本地预训练权重，取消注释并填写路径
+# weights: D:\code\yolov11_obb_dota\ultralytics-main\yolo11n.pt
+
+# 其他差异化训练参数按需覆盖
+# train:
+#   epochs: 300
+#   batch: 32
+#   pretrained: false
+

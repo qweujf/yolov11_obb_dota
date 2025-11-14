@@ -15,6 +15,7 @@ from ultralytics import YOLO
 
 def test_module_forward():
     from research.nn.modules.sfe_drb import SFE_DRB
+    from research.nn.modules.c3k2_roam import C3k2_ROAM
 
     m = SFE_DRB(256, 256, use_residual=True).eval()
     x = torch.randn(1, 256, 80, 80)
@@ -23,6 +24,11 @@ def test_module_forward():
     with torch.no_grad():
         y = m([x, hr])
     print(f"[Module] in={tuple(x.shape)}, hr={tuple(hr.shape)}, out={tuple(y.shape)}")
+
+    c3 = C3k2_ROAM(256, 256, n=2).eval()
+    with torch.no_grad():
+        z = c3(torch.randn(1, 256, 80, 80))
+    print(f"[Module] C3k2_ROAM out={tuple(z.shape)}")
 
 
 def test_model_build_and_forward():
@@ -38,8 +44,10 @@ def test_model_build_and_forward():
 
     # 随机前向（仅验证可跑通，不代表真实性能）
     x = torch.randn(1, 3, 640, 640)
+    core = model.model  # type: ignore[attr-defined]
+    core.eval()
     with torch.no_grad():
-        _ = model.model(x)  # type: ignore[attr-defined]
+        _ = core(x)
     print("[Model] forward ok with random input 640x640")
 
 
