@@ -17,7 +17,6 @@ def test_module_forward():
 
     module = C3k2_ROAM(256, 256, n=2).eval()
     x = torch.randn(1, 256, 80, 80)
-
     with torch.no_grad():
         y = module(x)
     print(f"[C3k2_ROAM] in={tuple(x.shape)}, out={tuple(y.shape)}")

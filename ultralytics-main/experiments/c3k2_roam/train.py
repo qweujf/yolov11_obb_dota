@@ -4,25 +4,23 @@ import yaml
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-# 确保项目根路径在 sys.path 中
 repo_root = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(repo_root))
 
-# 禁用自动下载
 os.environ["YOLO_OFFLINE"] = "True"
 
 from ultralytics import YOLO  # noqa: E402
 
 
-def load_yaml_config(config_path: Path) -> Dict[str, Any]:
-    if not config_path.exists():
+def load_yaml_config(path: Path) -> Dict[str, Any]:
+    if not path.exists():
         return {}
     try:
-        with open(config_path, "r", encoding="utf-8") as f:
-            loaded = yaml.safe_load(f) or {}
-            return loaded if isinstance(loaded, dict) else {}
+        with open(path, "r", encoding="utf-8") as f:
+            data = yaml.safe_load(f) or {}
+            return data if isinstance(data, dict) else {}
     except Exception as e:
-        print(f"⚠️ 加载配置失败 {config_path}: {e}")
+        print(f"⚠️ 加载配置失败 {path}: {e}")
         return {}
 
 
@@ -40,35 +38,29 @@ def main() -> None:
     exp_dir = Path(__file__).resolve().parent
     exp_cfg_path = exp_dir / "config.yaml"
 
-    default_train_cfg = load_yaml_config(repo_root / "configs" / "train" / "default.yaml")
-    exp_cfg_raw = load_yaml_config(exp_cfg_path)
+    default_train = load_yaml_config(repo_root / "configs" / "train" / "default.yaml")
+    exp_cfg = load_yaml_config(exp_cfg_path)
 
-    # 权重路径（若提供则加载）
     weights_path = None
-    if "weights" in exp_cfg_raw and exp_cfg_raw["weights"]:
-        weights_path = Path(exp_cfg_raw["weights"]).expanduser()
+    if exp_cfg.get("weights"):
+        weights_path = Path(exp_cfg["weights"]).expanduser()
         if not weights_path.is_absolute():
             weights_path = repo_root / weights_path
-        del exp_cfg_raw["weights"]
+        del exp_cfg["weights"]
 
-    # 合并训练配置
-    exp_train_cfg = exp_cfg_raw.get("train", {})
-    train_cfg = merge_configs(default_train_cfg, exp_train_cfg)
+    train_override = exp_cfg.get("train", {})
+    train_cfg = merge_configs(default_train, train_override)
 
-    # 模型、数据路径
-    model_path = str((repo_root / exp_cfg_raw.get("model", "configs/model/yolo11-obb-sfe-drb.yaml")).resolve())
-    data_path = str((repo_root / exp_cfg_raw.get("data", "configs/data/dota_obb.yaml")).resolve())
+    model_path = str((repo_root / exp_cfg.get("model", "configs/model/yolo11-obb-sfe-drb.yaml")).resolve())
+    data_path = str((repo_root / exp_cfg.get("data", "configs/data/dota_obb.yaml")).resolve())
     train_cfg["data"] = data_path
 
-    # research 模块路径
     src_dir = repo_root / "src"
     if src_dir.exists():
         sys.path.insert(0, str(src_dir))
 
-    # 构建模型
     model = YOLO(model_path)
 
-    # 加载本地预训练权重
     if weights_path and weights_path.exists():
         print(f"✅ 加载本地权重: {weights_path}")
         try:
@@ -77,7 +69,6 @@ def main() -> None:
         except Exception as e:
             print(f"⚠️ 本地权重加载失败: {e}，将从头训练")
 
-    # 输出关键训练参数
     print("\n============== 训练配置摘要 ==============")
     for k in ["epochs", "batch", "imgsz", "device", "lr0", "optimizer", "name"]:
         if k in train_cfg:

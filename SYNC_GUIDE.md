@@ -7,7 +7,7 @@
 ```bash
 # 1. 在学校电脑上：提交并推送代码
 git add .
-git commit -m "C3k2_ROAM"
+git commit -m "c3k2_roam"
 git push
 
 # 2. 在公司电脑上：拉取最新代码

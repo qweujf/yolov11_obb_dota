@@ -1,5 +1,5 @@
 import math
-from typing import List, Tuple, Union
+from typing import List, Union
 
 import torch
 import torch.nn as nn
@@ -7,10 +7,9 @@ import torch.nn as nn
 from ultralytics.nn.modules.conv import Conv, DWConv
 
 
-def _gn_groups(c: int) -> int:
-    """Select a valid GroupNorm groups count for channel size c."""
+def _gn_groups(channels: int) -> int:
     for g in [32, 16, 8, 4, 2, 1]:
-        if c % g == 0:
+        if channels % g == 0:
             return g
     return 1
 
@@ -24,13 +23,13 @@ class OrientationSelectiveUnit(nn.Module):
             [
                 DWConv(channels, channels, (1, k), act=False),
                 DWConv(channels, channels, (k, 1), act=False),
-                DWConv(channels, channels, k, d=1, act=False),
+                DWConv(channels, channels, k, act=False),
                 DWConv(channels, channels, k, d=2, act=False),
             ]
         )
+        self.fuse = Conv(channels * len(self.branches), channels, 1, act=act)
         self.norm = nn.GroupNorm(_gn_groups(channels), channels)
         self.act = nn.SiLU() if act is True else act if isinstance(act, nn.Module) else nn.Identity()
-        self.fuse = Conv(channels * len(self.branches), channels, 1, act=act)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         feats = torch.cat([b(x) for b in self.branches], dim=1)
@@ -47,23 +46,22 @@ class RotationChannelReconstruction(nn.Module):
         groups = max(1, min(groups, channels))
         self.branch_a = Conv(channels, channels, 3, g=groups, act=act)
         self.branch_b = Conv(channels, channels, 5, g=groups, act=act)
-        self.point = Conv(channels, channels, 1, act=act)
-
+        act_module = nn.SiLU() if act is True else act if isinstance(act, nn.Module) else nn.SiLU()
         hidden = max(channels // 4, 8)
         self.attn = nn.Sequential(
             nn.AdaptiveAvgPool2d(1),
             nn.Conv2d(channels, hidden, 1, bias=True),
-            nn.SiLU() if act is True else (act if isinstance(act, nn.Module) else nn.SiLU()),
+            act_module,
             nn.Conv2d(hidden, 2, 1, bias=True),
             nn.Softmax(dim=1),
         )
+        self.point = Conv(channels, channels, 1, act=act)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         a = self.branch_a(x)
         b = self.branch_b(x)
         weights = self.attn(a + b)
-        wa, wb = weights[:, 0:1], weights[:, 1:2]
-        fused = wa * a + wb * b
+        fused = weights[:, 0:1] * a + weights[:, 1:2] * b
         return self.point(fused)
 
 
@@ -88,20 +86,17 @@ class RotationInvariantChannelAttention(nn.Module):
     def __init__(self, channels: int, reduction: int = 4, act: Union[nn.Module, bool] = nn.SiLU()):
         super().__init__()
         hidden = max(channels // reduction, 8)
+        act_module = nn.SiLU() if act is True else act if isinstance(act, nn.Module) else nn.SiLU()
         self.pool = nn.AdaptiveAvgPool2d(1)
-        activation = nn.SiLU() if act is True else act if isinstance(act, nn.Module) else nn.SiLU()
         self.mlp = nn.Sequential(
             nn.Conv2d(channels, hidden, 1, bias=True),
-            activation,
+            act_module,
             nn.Conv2d(hidden, channels, 1, bias=True),
             nn.Sigmoid(),
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        pooled = torch.stack(
-            [self.pool(torch.rot90(x, k, dims=(2, 3))) for k in range(4)],
-            dim=0,
-        ).mean(0)
+        pooled = torch.stack([self.pool(torch.rot90(x, k, dims=(2, 3))) for k in range(4)], dim=0).mean(0)
         return self.mlp(pooled)
 
 
@@ -127,9 +122,10 @@ class AngleAttention(nn.Module):
 
     def __init__(self, channels: int, act: Union[nn.Module, bool] = nn.SiLU()):
         super().__init__()
+        g = math.gcd(channels, channels)
         self.proj = nn.Sequential(
             Conv(2 * channels, channels, 1, act=act),
-            Conv(channels, channels, 3, g=math.gcd(channels, channels), act=False),
+            Conv(channels, channels, 3, g=g, act=False),
             nn.Sigmoid(),
         )
 
@@ -150,10 +146,7 @@ class ROAM(nn.Module):
         self.aa = AngleAttention(channels, act=act)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        ca = self.ca(x)
-        sa = self.sa(x)
-        aa = self.aa(x)
-        return x * ca * aa * sa
+        return x * self.ca(x) * self.sa(x) * self.aa(x)
 
 
 class C3k2_ROAM(nn.Module):
@@ -164,7 +157,7 @@ class C3k2_ROAM(nn.Module):
         c1: int,
         c2: int,
         n: int = 1,
-        c3k: bool = False,  # noqa: ARG002 - kept for yaml compatibility
+        c3k: bool = False,  # kept for yaml compatibility
         e: float = 0.5,
         g: int = 1,
         shortcut: bool = True,
@@ -181,8 +174,7 @@ class C3k2_ROAM(nn.Module):
         y = list(self.cv1(x).chunk(2, 1))
         feats: List[torch.Tensor] = [y[0], y[1]]
         for block in self.blocks:
-            y_next = block(feats[-1])
-            feats.append(y_next)
+            feats.append(block(feats[-1]))
         fused = torch.cat(feats, dim=1)
         fused = self.roam(fused)
         return self.cv2(fused)
