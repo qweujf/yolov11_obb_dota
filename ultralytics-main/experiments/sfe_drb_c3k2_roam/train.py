@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 repo_root = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(repo_root)) -+++++++++++++++++++++++++++++++++++++++++++++++
+sys.path.insert(0, str(repo_root))
 
 os.environ["YOLO_OFFLINE"] = "True"
 

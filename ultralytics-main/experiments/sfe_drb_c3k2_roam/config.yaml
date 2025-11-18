@@ -3,7 +3,10 @@
 
 model: configs/model/yolo11-obb-sfe-drb.yaml
 name: c3k2_roam
-
+train:
+  project: runs/obb/sfe_drb_c3k2_roam   # 你想要的输出根目录
+  name: exp_name                        # 子目录名
+  resume: true                          # 如需接着上次 checkpoint
 # 如需加载本地预训练权重，取消注释并填写路径
 # weights: D:\code\yolov11_obb_dota\ultralytics-main\yolo11n.pt
 
