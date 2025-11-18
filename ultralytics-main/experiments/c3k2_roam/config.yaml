@@ -1,13 +1,9 @@
-# C3k2_ROAM å®éªŒé…ç½®
-# åªå†™ä¸ configs/train/default.yaml ä¸åŒçš„å‚æ•°
-
-model: configs/model/yolo11-obb-sfe-drb.yaml
-name: c3k2_roam
-
-# å¦‚éœ€åŠ è½½æœ¬åœ°é¢„è®­ç»ƒæƒé‡ï¼Œå–æ¶ˆæ³¨é‡Šå¹¶å¡«å†™è·¯å¾„
+# »ù×¼ + C3k2_ROAM ÊµÑéÅäÖÃ£¨²»°üº¬ SFE_DRB£©
+model: configs/model/yolo11-obb-c3k2-roam.yaml
+name: c3k2_roam_only
+# ¿ÉÑ¡£ºÖ¸¶¨³õÊ¼È¨ÖØ
 # weights: D:\code\yolov11_obb_dota\ultralytics-main\yolo11n.pt
 
 # train:
 #   epochs: 300
-#   batch: 32
-
+#   batch: 4

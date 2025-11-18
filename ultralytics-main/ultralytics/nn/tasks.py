@@ -1712,7 +1712,7 @@ def parse_model(d, ch, verbose=True):
                 # Use the first input branch as channel source; the second is a high-res aid
                 c1, c2 = ch[f[0]], args[0]
             else:
-                c1, c2 = ch[f], args[0]
+            c1, c2 = ch[f], args[0]
             if c2 != nc:  # if c2 not equal to number of classes (i.e. for Classify() output)
                 c2 = make_divisible(min(c2, max_channels) * width, 8)
             if m is C2fAttn:  # set 1) embed channels and 2) num heads
