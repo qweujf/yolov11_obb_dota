@@ -1741,13 +1741,11 @@ def parse_model(d, ch, verbose=True):
         elif m is MSFFBlock:
             input_channels = [ch[x] for x in (f if isinstance(f, list) else [f])]
             mid_ch = args[0] if args else input_channels[0]
-            mid_ch = make_divisible(min(mid_ch, max_channels) * width, 8)
             args = [input_channels, mid_ch, *args[1:]]
             c2 = mid_ch
         elif m is SmallObjectHead:
             c1 = ch[f]
             head_channels = args[1] if len(args) > 1 else args[0]
-            head_channels = make_divisible(min(head_channels, max_channels) * width, 8)
             args = [c1, head_channels, *args[2:]]
             c2 = head_channels
         elif m in frozenset({TorchVision, Index}):
