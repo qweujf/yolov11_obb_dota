@@ -50,11 +50,11 @@ head:
   - [-1, 2, C3k2, [1024, True]]  # 22 (P5/32-large)
 
   # === MSFF + small-object head ===
-  - [[16, 19, 22], 1, MSFFBlock, [[256, 512, 1024], 256]]  # 23 -> [P2,P3,P4,P5]
-  - [23, 1, Index, [0]]  # 24: P2 (high-res)
-  - [23, 1, Index, [1]]  # 25: refined P3
-  - [23, 1, Index, [2]]  # 26: refined P4
-  - [23, 1, Index, [3]]  # 27: refined P5
+  - [[16, 19, 22], 1, MSFFBlock, [256]]  # 23 -> outputs list [P2,P3,P4,P5]
+  - [23, 1, Index, [256, 0]]  # 24: P2 (high-res)
+  - [23, 1, Index, [256, 1]]  # 25: refined P3
+  - [23, 1, Index, [256, 2]]  # 26: refined P4
+  - [23, 1, Index, [256, 3]]  # 27: refined P5
   - [24, 1, SmallObjectHead, [256, 128]]  # 28: small-object focused feature
 
   - [[28, 25, 26, 27], 1, OBB, [nc, 1]]  # Detect on four scales (P2~P5)
