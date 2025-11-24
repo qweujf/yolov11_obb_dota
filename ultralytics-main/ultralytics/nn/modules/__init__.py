@@ -120,6 +120,11 @@ try:
         )
         from research.nn.modules.sfe_drb import SFE_DRB
         from research.nn.modules.c3k2_roam import C3k2_ROAM
+        from research.nn.modules.msff_small_head import (
+            MSFFBlock,
+            SmallObjectHead,
+            EnhancedFPNWithSmallHead,
+        )
     else:
         # 如果 research 目录不存在，尝试从本地导入（向后兼容）
         from .mca_attention import (
@@ -133,6 +138,11 @@ try:
         )
         from .sfe_drb import SFE_DRB
         from .c3k2_roam import C3k2_ROAM
+        from .msff_small_head import (
+            MSFFBlock,
+            SmallObjectHead,
+            EnhancedFPNWithSmallHead,
+        )
 except ImportError:
     # 如果导入失败，尝试从本地导入（向后兼容）
     try:
@@ -147,6 +157,11 @@ except ImportError:
         )
         from .sfe_drb import SFE_DRB
         from .c3k2_roam import C3k2_ROAM
+        from .msff_small_head import (
+            MSFFBlock,
+            SmallObjectHead,
+            EnhancedFPNWithSmallHead,
+        )
     except ImportError:
         # 如果都失败，定义占位符类
         MCAttention = None
@@ -156,6 +171,9 @@ except ImportError:
         AdaptiveFPN = None
         SFE_DRB = None
         C3k2_ROAM = None
+        MSFFBlock = None
+        SmallObjectHead = None
+        EnhancedFPNWithSmallHead = None
 
 __all__ = (
     "Conv",
@@ -241,4 +259,7 @@ __all__ = (
     "AdaptiveFPN",
     "SFE_DRB",
     "C3k2_ROAM",
+    "MSFFBlock",
+    "SmallObjectHead",
+    "EnhancedFPNWithSmallHead",
 )

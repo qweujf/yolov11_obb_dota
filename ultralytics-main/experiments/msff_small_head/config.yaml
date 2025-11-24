@@ -1,0 +1,14 @@
+# MSFF + Small Object Head 实验配置
+# 基于 baseline YOLO11-OBB，引入第三个创新点
+
+name: msff_small_head
+model: configs/model/yolo11-obb-msff.yaml
+
+train:
+  epochs: 150
+  imgsz: 1024
+  batch: 16
+  device: 0
+  patience: 50
+
+

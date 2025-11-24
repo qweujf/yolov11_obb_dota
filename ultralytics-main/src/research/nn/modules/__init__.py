@@ -16,6 +16,11 @@ from .afpn import (
     RotatedAwareFPN,
     MultiScaleFeatureExtractor,
 )
+from .msff_small_head import (
+    MSFFBlock,
+    SmallObjectHead,
+    EnhancedFPNWithSmallHead,
+)
 
 __all__ = (
     "MCAttention",
@@ -31,5 +36,8 @@ __all__ = (
     "MultiScaleFeatureExtractor",
     "SFE_DRB",
     "C3k2_ROAM",
+    "MSFFBlock",
+    "SmallObjectHead",
+    "EnhancedFPNWithSmallHead",
 )
 
