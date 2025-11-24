@@ -9,7 +9,7 @@ from typing import Any, Dict, Optional
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-# 设置环境变量禁用自动下载（必须在导入 YOLO 之前�?
+# 设置环境变量禁用自动下载（必须在导入 YOLO 之前）
 os.environ["YOLO_OFFLINE"] = "True"
 
 from ultralytics import YOLO
@@ -45,7 +45,7 @@ def main() -> None:
     default_train_cfg = load_yaml_config(repo_root / "configs" / "train" / "default.yaml")
     exp_cfg_raw = load_yaml_config(exp_cfg_path)
 
-    # 提取 weights，并从训练参数剔�?
+    # 提取 weights，并从训练参数剔除
     weights_path = None
     if "weights" in exp_cfg_raw and exp_cfg_raw["weights"]:
         weights_path = Path(exp_cfg_raw["weights"]).expanduser()
@@ -53,12 +53,12 @@ def main() -> None:
             weights_path = repo_root / weights_path
         del exp_cfg_raw["weights"]
 
-    # 合并 train 子配�?
+    # 合并 train 子配置
     exp_train_cfg = exp_cfg_raw.get("train", {})
     cfg = merge_configs(default_train_cfg, exp_train_cfg)
 
     # 模型/数据路径
-    model_path = str((repo_root / exp_cfg_raw.get("model", "configs/model/yolo11-obb-sfe-drb.yaml")).resolve())
+    model_path = str((repo_root / exp_cfg_raw.get("model", "configs/model/yolo11-obb-c3k2-roam.yaml")).resolve())
     data_path = str((repo_root / exp_cfg_raw.get("data", "configs/data/dota_obb.yaml")).resolve())
     cfg["data"] = data_path
 
@@ -70,9 +70,9 @@ def main() -> None:
     # 构建模型
     model = YOLO(model_path)
 
-    # 加载本地权重（如指定�?
+    # 加载本地权重（如指定）
     if weights_path and weights_path.exists():
-        print(f"�?加载本地权重: {weights_path}")
+        print(f"✅ 加载本地权重: {weights_path}")
         try:
             model.load(str(weights_path))
             cfg["pretrained"] = False

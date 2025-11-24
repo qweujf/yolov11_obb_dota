@@ -1,5 +1,5 @@
 # Ultralytics 🚀 AGPL-3.0 License - https://ultralytics.com/license
-# 12:24 修改
+
 import contextlib
 import pickle
 import re
@@ -55,12 +55,6 @@ from ultralytics.nn.modules import (
     ImagePoolingAttn,
     Index,
     LRPCHead,
-    MCAttention,
-    AdaptiveAttention,
-    SCAttention,
-    AFPN,
-    AdaptiveFPN,
-    SFE_DRB,
     Pose,
     RepC3,
     RepConv,
@@ -1649,10 +1643,6 @@ def parse_model(d, ch, verbose=True):
             SCDown,
             C2fCIB,
             A2C2f,
-            MCAttention,
-            AdaptiveAttention,
-            SCAttention,
-            SFE_DRB,
         }
     )
     repeat_modules = frozenset(  # modules with 'repeat' arguments
@@ -1662,7 +1652,6 @@ def parse_model(d, ch, verbose=True):
             C2,
             C2f,
             C3k2,
-            C3k2_ROAM,
             C2fAttn,
             C3,
             C3TR,
@@ -1685,33 +1674,10 @@ def parse_model(d, ch, verbose=True):
         )  # get module
         for j, a in enumerate(args):
             if isinstance(a, str):
-                # 尝试从 locals 中获取，如果失败则尝试 literal_eval
-                # 对于 MCAttention 等模块，列表参数可能已经是正确格式，不需要解析
-                try:
-                    if a in locals():
-                        args[j] = locals()[a]
-                    elif a == "None":
-                        # 特殊处理 None 字符串
-                        args[j] = None
-                    else:
-                        # 尝试解析字符串，但如果失败则保持原值
-                        # 这对于嵌套列表（如 [3, 5, 7]）很重要，因为它们可能被解析为字符串
-                        # 检查字符串是否看起来像是一个可解析的表达式
-                        if a.strip().startswith(('(', '[', '{', '"', "'")):
-                            args[j] = ast.literal_eval(a)
-                        # 否则保持原值，让模块自己处理
-                except (ValueError, SyntaxError) as e:
-                    # 如果解析失败，保持原值（可能是已经解析好的对象，或者是无法解析的字符串）
-                    # 这种情况下，参数会在后续处理中被模块自己处理
-                    # 对于 MCAttention 等自定义模块，它们会自己处理参数格式
-                    pass
+                with contextlib.suppress(ValueError):
+                    args[j] = locals()[a] if a in locals() else ast.literal_eval(a)
         n = n_ = max(round(n * depth), 1) if n > 1 else n  # depth gain
         if m in base_modules:
-            # Special-case: modules that accept multiple inputs in 'from' list
-            if m is SFE_DRB and isinstance(f, list):
-                # Use the first input branch as channel source; the second is a high-res aid
-                c1, c2 = ch[f[0]], args[0]
-            else:
             c1, c2 = ch[f], args[0]
             if c2 != nc:  # if c2 not equal to number of classes (i.e. for Classify() output)
                 c2 = make_divisible(min(c2, max_channels) * width, 8)

@@ -1,9 +1,15 @@
-# »ù×¼ + C3k2_ROAM ÊµÑéÅäÖÃ£¨²»°üº¬ SFE_DRB£©
+# baseline + C3k2_ROAM å®éªŒé…ç½®ï¼ˆä¸åŒ…å« SFE_DRBï¼‰
 model: configs/model/yolo11-obb-c3k2-roam.yaml
-name: c3k2_roam_only
-# ¿ÉÑ¡£ºÖ¸¶¨³õÊ¼È¨ÖØ
-# weights: D:\code\yolov11_obb_dota\ultralytics-main\yolo11n.pt
 
+train:
+  project: runs/obb/c3k2_roam
+  name: baseline_c3k2
+  # resume: D:/code/yolov11_obb_dota/runs/obb/c3k2_roam/baseline_c3k2/weights/last.pt
+
+# å¦‚éœ€åŠ è½½é¢„è®­ç»ƒæƒé‡å¯å–æ¶ˆæ³¨é‡Š
+# weights: D:/code/yolov11_obb_dota/ultralytics-main/yolo11n.pt
+
+# å…¶ä»–å¯é€‰è®­ç»ƒå‚æ•°
 # train:
 #   epochs: 300
 #   batch: 4

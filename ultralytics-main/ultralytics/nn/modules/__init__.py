@@ -136,15 +136,15 @@ try:
 except ImportError:
     # 如果导入失败，尝试从本地导入（向后兼容）
     try:
-from .mca_attention import (
-    MCAttention,
-    AdaptiveAttention,
-    SCAttention,
-)
-from .afpn import (
-    AFPN,
-    AdaptiveFPN,
-)
+        from .mca_attention import (
+            MCAttention,
+            AdaptiveAttention,
+            SCAttention,
+        )
+        from .afpn import (
+            AFPN,
+            AdaptiveFPN,
+        )
         from .sfe_drb import SFE_DRB
         from .c3k2_roam import C3k2_ROAM
     except ImportError:
