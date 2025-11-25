@@ -122,8 +122,7 @@ try:
         from research.nn.modules.c3k2_roam import C3k2_ROAM
         from research.nn.modules.msff_small_head import (
             MSFFBlock,
-            SmallObjectHead,
-            EnhancedFPNWithSmallHead,
+            P2MSFFBranch,
         )
     else:
         # 如果 research 目录不存在，尝试从本地导入（向后兼容）
@@ -140,8 +139,7 @@ try:
         from .c3k2_roam import C3k2_ROAM
         from .msff_small_head import (
             MSFFBlock,
-            SmallObjectHead,
-            EnhancedFPNWithSmallHead,
+            P2MSFFBranch,
         )
 except ImportError:
     # 如果导入失败，尝试从本地导入（向后兼容）
@@ -159,8 +157,7 @@ except ImportError:
         from .c3k2_roam import C3k2_ROAM
         from .msff_small_head import (
             MSFFBlock,
-            SmallObjectHead,
-            EnhancedFPNWithSmallHead,
+            P2MSFFBranch,
         )
     except ImportError:
         # 如果都失败，定义占位符类
@@ -172,8 +169,7 @@ except ImportError:
         SFE_DRB = None
         C3k2_ROAM = None
         MSFFBlock = None
-        SmallObjectHead = None
-        EnhancedFPNWithSmallHead = None
+        P2MSFFBranch = None
 
 __all__ = (
     "Conv",
@@ -260,6 +256,5 @@ __all__ = (
     "SFE_DRB",
     "C3k2_ROAM",
     "MSFFBlock",
-    "SmallObjectHead",
-    "EnhancedFPNWithSmallHead",
+    "P2MSFFBranch",
 )

@@ -55,15 +55,8 @@ from ultralytics.nn.modules import (
     ImagePoolingAttn,
     Index,
     LRPCHead,
-    MCAttention,
-    AdaptiveAttention,
-    SCAttention,
-    AFPN,
-    AdaptiveFPN,
-    SFE_DRB,
     MSFFBlock,
-    SmallObjectHead,
-    EnhancedFPNWithSmallHead,
+    P2MSFFBranch,
     Pose,
     RepC3,
     RepConv,
@@ -1743,11 +1736,13 @@ def parse_model(d, ch, verbose=True):
             mid_ch = args[0] if args else input_channels[0]
             args = [input_channels, mid_ch, *args[1:]]
             c2 = mid_ch
-        elif m is SmallObjectHead:
-            c1 = ch[f]
-            head_channels = args[1] if len(args) > 1 else args[0]
-            args = [c1, head_channels, *args[2:]]
-            c2 = head_channels
+        elif m is P2MSFFBranch:
+            assert isinstance(f, list) and len(f) == 2, "P2MSFFBranch expects two inputs (P2, P3)."
+            p2_ch, p3_ch = ch[f[0]], ch[f[1]]
+            branch_ch = args[0] if args else min(p2_ch, 128)
+            out_ch = args[1] if len(args) > 1 else branch_ch
+            args = [p2_ch, p3_ch, branch_ch, out_ch, *args[2:]]
+            c2 = out_ch
         elif m in frozenset({TorchVision, Index}):
             c2 = args[0]
             c1 = ch[f]

@@ -88,83 +88,57 @@ class MSFFBlock(nn.Module):
         return p2, p3_out, p4_out, p5_out
 
 
-class SmallObjectHead(nn.Module):
+class P2MSFFBranch(nn.Module):
     """
-    Lightweight detection head that focuses on high-resolution features produced by MSFF.
+    Lightweight MSFF branch dedicated to P2.
 
-    It mixes a local-detail branch with a context branch and can be attached to the Detect layer
-    as an extra feature level.
-    """
-
-    def __init__(self, in_channels: int, head_channels: int = 128):
-        super().__init__()
-        inter_channels = max(head_channels, in_channels // 2)
-
-        # local branch captures fine spatial cues
-        self.local_branch = nn.Sequential(
-            nn.Conv2d(in_channels, inter_channels, kernel_size=3, padding=1, bias=False),
-            nn.BatchNorm2d(inter_channels),
-            nn.SiLU(inplace=True),
-            nn.Conv2d(inter_channels, head_channels, kernel_size=3, padding=1, groups=head_channels, bias=False),
-            nn.BatchNorm2d(head_channels),
-            nn.SiLU(inplace=True),
-        )
-
-        # context branch enlarges receptive field
-        self.context_branch = nn.Sequential(
-            nn.Conv2d(in_channels, inter_channels, kernel_size=1, bias=False),
-            nn.BatchNorm2d(inter_channels),
-            nn.SiLU(inplace=True),
-            nn.Conv2d(inter_channels, head_channels, kernel_size=3, padding=2, dilation=2, bias=False),
-            nn.BatchNorm2d(head_channels),
-            nn.SiLU(inplace=True),
-        )
-
-        self.fusion_gate = nn.Sequential(
-            nn.Conv2d(head_channels * 2, head_channels, kernel_size=1, bias=False),
-            nn.BatchNorm2d(head_channels),
-            nn.Sigmoid(),
-        )
-
-        self.output_proj = nn.Sequential(
-            nn.Conv2d(head_channels, head_channels, kernel_size=3, padding=1, bias=False),
-            nn.BatchNorm2d(head_channels),
-            nn.SiLU(inplace=True),
-        )
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        local_feat = self.local_branch(x)
-        context_feat = self.context_branch(x)
-        fused = torch.cat([local_feat, context_feat], dim=1)
-        gate = self.fusion_gate(fused)
-        # gate is channel-wise, split to match local branch channels
-        gated = local_feat * gate + context_feat * (1 - gate)
-        return self.output_proj(gated)
-
-
-class EnhancedFPNWithSmallHead(nn.Module):
-    """
-    Wrapper that bundles MSFF and the dedicated small-object head.
-
-    Usage pattern inside a YOLO YAML:
-      - feed the baseline P3/P4/P5 features to this module
-      - receive four refined pyramid levels plus a high-resolution feature for Detect
+    Takes P2 and P3 features, merges multi-scale context, and produces a small-object-aware P2 feature map.
     """
 
     def __init__(
         self,
-        in_channels: List[int],
-        mid_channels: int = 256,
-        small_head_channels: int = 128,
+        p2_channels: int,
+        p3_channels: int,
+        branch_channels: int = 128,
+        out_channels: int = 96,
     ):
         super().__init__()
-        self.msff = MSFFBlock(in_channels, mid_channels=mid_channels)
-        self.small_head = SmallObjectHead(mid_channels, head_channels=small_head_channels)
+        self.branch_channels = branch_channels
 
-    def forward(self, features: List[torch.Tensor]) -> Tuple[List[torch.Tensor], torch.Tensor]:
-        p2, p3, p4, p5 = self.msff(features)
-        p2_small = self.small_head(p2)
-        # Return pyramid features plus the dedicated small-object map
-        return [p2, p3, p4, p5], p2_small
+        # lateral projections
+        self.p2_proj = nn.Sequential(
+            nn.Conv2d(p2_channels, branch_channels, kernel_size=1, bias=False),
+            nn.BatchNorm2d(branch_channels),
+            nn.SiLU(inplace=True),
+        )
+        self.p3_proj = nn.Sequential(
+            nn.Conv2d(p3_channels, branch_channels, kernel_size=1, bias=False),
+            nn.BatchNorm2d(branch_channels),
+            nn.SiLU(inplace=True),
+        )
+
+        # multi-scale context (depthwise + dilated)
+        self.context = nn.Sequential(
+            nn.Conv2d(branch_channels * 2, branch_channels, kernel_size=3, padding=1, groups=branch_channels, bias=False),
+            nn.BatchNorm2d(branch_channels),
+            nn.SiLU(inplace=True),
+            nn.Conv2d(branch_channels, branch_channels, kernel_size=3, padding=2, dilation=2, bias=False),
+            nn.BatchNorm2d(branch_channels),
+            nn.SiLU(inplace=True),
+        )
+
+        self.output = nn.Sequential(
+            nn.Conv2d(branch_channels, out_channels, kernel_size=1, bias=False),
+            nn.BatchNorm2d(out_channels),
+            nn.SiLU(inplace=True),
+        )
+
+    def forward(self, p2: torch.Tensor, p3: torch.Tensor) -> torch.Tensor:
+        p3_up = F.interpolate(p3, size=p2.shape[-2:], mode="bilinear", align_corners=False)
+        p2_feat = self.p2_proj(p2)
+        p3_feat = self.p3_proj(p3_up)
+        fused = torch.cat([p2_feat, p3_feat], dim=1)
+        fused = self.context(fused)
+        return self.output(fused)
 
 

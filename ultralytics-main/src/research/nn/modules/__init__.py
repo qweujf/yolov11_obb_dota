@@ -18,8 +18,7 @@ from .afpn import (
 )
 from .msff_small_head import (
     MSFFBlock,
-    SmallObjectHead,
-    EnhancedFPNWithSmallHead,
+    P2MSFFBranch,
 )
 
 __all__ = (
@@ -37,7 +36,6 @@ __all__ = (
     "SFE_DRB",
     "C3k2_ROAM",
     "MSFFBlock",
-    "SmallObjectHead",
-    "EnhancedFPNWithSmallHead",
+    "P2MSFFBranch",
 )
 
