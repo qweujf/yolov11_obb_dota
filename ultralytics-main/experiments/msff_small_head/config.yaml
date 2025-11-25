@@ -5,10 +5,10 @@ name: msff_small_head
 model: configs/model/yolo11-obb-msff.yaml
 
 train:
-  epochs: 150
+  epochs: 300
   imgsz: 896          # 降低输入尺寸，缓解显存与计算压力
   batch: 4
-  accumulate: 2       # 等效 batch=8，但不额外占显存
+ # accumulate: 2       # 等效 batch=8，但不额外占显存
   device: 0
   patience: 50
   multi_scale: true   # 训练时随机缩放，提升泛化同时均摊负载

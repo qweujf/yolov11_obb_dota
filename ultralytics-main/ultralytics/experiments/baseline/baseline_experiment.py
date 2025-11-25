@@ -45,7 +45,7 @@ def create_baseline_config():
 
         # 训练
         'epochs': 300,
-        'batch': 4,
+        'batch': 2,
         'imgsz': 1024,
         'workers': 4,
         'val': True,
