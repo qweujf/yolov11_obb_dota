@@ -4,20 +4,6 @@
 name: msff_small_head
 model: configs/model/yolo11-obb-msff.yaml
 
-train:
-  epochs: 300
-  imgsz: 896          # 降低输入尺寸，缓解显存与计算压力
-  batch: 4
- # accumulate: 2       # 等效 batch=8，但不额外占显存
-  device: 0
-  patience: 50
-  multi_scale: true   # 训练时随机缩放，提升泛化同时均摊负载
-  workers: 2
 
-  # 验证阶段参数（减少 NMS 和 IoU 计算量）
-  val: false          # 训练过程中关闭自动验证，需时可手动运行 yolo val
-  conf: 0.05
-  iou: 0.65
-  max_det: 100
 
 

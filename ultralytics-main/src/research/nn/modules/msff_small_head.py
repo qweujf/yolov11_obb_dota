@@ -133,7 +133,13 @@ class P2MSFFBranch(nn.Module):
             nn.SiLU(inplace=True),
         )
 
-    def forward(self, p2: torch.Tensor, p3: torch.Tensor) -> torch.Tensor:
+    def forward(self, inputs: List[torch.Tensor] | Tuple[torch.Tensor, torch.Tensor]) -> torch.Tensor:
+        if isinstance(inputs, (list, tuple)):
+            assert len(inputs) == 2, "P2MSFFBranch expects [P2, P3] inputs."
+            p2, p3 = inputs
+        else:
+            raise TypeError("P2MSFFBranch forward expects a list/tuple of [P2, P3].")
+
         p3_up = F.interpolate(p3, size=p2.shape[-2:], mode="bilinear", align_corners=False)
         p2_feat = self.p2_proj(p2)
         p3_feat = self.p3_proj(p3_up)
