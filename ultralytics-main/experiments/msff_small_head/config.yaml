@@ -3,12 +3,8 @@
 
 name: msff_small_head
 model: configs/model/yolo11-obb-msff.yaml
-
-train:
-  epochs: 150
-  imgsz: 1024
-  batch: 16
-  device: 0
-  patience: 50
+#
+#train:
+#  patience: 50
 
 
