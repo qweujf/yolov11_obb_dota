@@ -6,7 +6,7 @@ It enhances the feature pyramid without relying on the other custom modules
 so it can be plugged directly into baseline experiments as the third innovation point.
 """
 
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 import torch
 import torch.nn as nn
@@ -133,12 +133,11 @@ class P2MSFFBranch(nn.Module):
             nn.SiLU(inplace=True),
         )
 
-    def forward(self, inputs: List[torch.Tensor] | Tuple[torch.Tensor, torch.Tensor]) -> torch.Tensor:
-        if isinstance(inputs, (list, tuple)):
-            assert len(inputs) == 2, "P2MSFFBranch expects [P2, P3] inputs."
-            p2, p3 = inputs
-        else:
+    def forward(self, inputs: Union[List[torch.Tensor], Tuple[torch.Tensor, torch.Tensor]]) -> torch.Tensor:
+        if not isinstance(inputs, (list, tuple)):
             raise TypeError("P2MSFFBranch forward expects a list/tuple of [P2, P3].")
+        assert len(inputs) == 2, "P2MSFFBranch expects [P2, P3] inputs."
+        p2, p3 = inputs
 
         p3_up = F.interpolate(p3, size=p2.shape[-2:], mode="bilinear", align_corners=False)
         p2_feat = self.p2_proj(p2)
