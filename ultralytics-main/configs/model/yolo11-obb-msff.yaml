@@ -41,9 +41,10 @@ head:
   - [[-1, 10], 1, Concat, [1]]  # 21 cat head P5
   - [-1, 2, C3k2, [1024, True]]  # 22 (P5/32-large)
 
-  # === LightMSFF: Lightweight Multi-Scale Feature Fusion ===
+  # === MSFF: Multi-Scale Feature Fusion (Medium strength) ===
   # Takes P3(16), P4(19), P5(22) and returns enhanced P3', P4', P5'
-  - [[16, 19, 22], 1, LightMSFF, [64]]  # 23: outputs tuple (P3', P4', P5')
+  # Uses 128 fusion channels for better accuracy (can be pruned later)
+  - [[16, 19, 22], 1, MSFF, [128]]  # 23: outputs tuple (P3', P4', P5')
 
   # Extract enhanced features from LightMSFF output
   - [23, 1, Index, [0]]  # 24: enhanced P3

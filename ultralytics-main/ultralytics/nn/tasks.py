@@ -55,6 +55,7 @@ from ultralytics.nn.modules import (
     ImagePoolingAttn,
     Index,
     LRPCHead,
+    MSFF,
     LightMSFF,
     MSFFBlock,
     Pose,
@@ -1731,7 +1732,7 @@ def parse_model(d, ch, verbose=True):
             args = [c1, c2, *args[1:]]
         elif m is CBFuse:
             c2 = ch[f[-1]]
-        elif m in {LightMSFF, MSFFBlock}:
+        elif m in {MSFF, LightMSFF, MSFFBlock}:
             # LightMSFF expects [P3, P4, P5] input channels
             input_channels = [ch[x] for x in (f if isinstance(f, list) else [f])]
             fusion_ch = args[0] if args else 64

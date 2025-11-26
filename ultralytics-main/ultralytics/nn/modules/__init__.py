@@ -121,6 +121,7 @@ try:
         from research.nn.modules.sfe_drb import SFE_DRB
         from research.nn.modules.c3k2_roam import C3k2_ROAM
         from research.nn.modules.msff_small_head import (
+            MSFF,
             LightMSFF,
             MSFFBlock,
         )
@@ -138,6 +139,7 @@ try:
         from .sfe_drb import SFE_DRB
         from .c3k2_roam import C3k2_ROAM
         from .msff_small_head import (
+            MSFF,
             LightMSFF,
             MSFFBlock,
         )
@@ -156,6 +158,7 @@ except ImportError:
         from .sfe_drb import SFE_DRB
         from .c3k2_roam import C3k2_ROAM
         from .msff_small_head import (
+            MSFF,
             LightMSFF,
             MSFFBlock,
         )
@@ -168,6 +171,7 @@ except ImportError:
         AdaptiveFPN = None
         SFE_DRB = None
         C3k2_ROAM = None
+        MSFF = None
         LightMSFF = None
         MSFFBlock = None
 
@@ -255,6 +259,7 @@ __all__ = (
     "AdaptiveFPN",
     "SFE_DRB",
     "C3k2_ROAM",
+    "MSFF",
     "LightMSFF",
     "MSFFBlock",
 )
