@@ -6,7 +6,7 @@
 # Parameters
 nc: 15  # DOTA dataset classes
 scales:
-  n: [0.50, 0.50, 1024]  # depth_multiple, width_multiple, max_channels
+  n: [0.25, 0.25, 1024]  # depth_multiple, width_multiple, max_channels (yolo11n standard)
 
 # YOLO11n-obb backbone (unchanged from baseline)
 backbone:
