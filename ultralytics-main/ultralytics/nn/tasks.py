@@ -55,8 +55,8 @@ from ultralytics.nn.modules import (
     ImagePoolingAttn,
     Index,
     LRPCHead,
+    LightMSFF,
     MSFFBlock,
-    P2MSFFBranch,
     Pose,
     RepC3,
     RepConv,
@@ -1731,19 +1731,25 @@ def parse_model(d, ch, verbose=True):
             args = [c1, c2, *args[1:]]
         elif m is CBFuse:
             c2 = ch[f[-1]]
-        elif m is MSFFBlock:
+        elif m in {LightMSFF, MSFFBlock}:
+            # LightMSFF expects [P3, P4, P5] input channels
             input_channels = [ch[x] for x in (f if isinstance(f, list) else [f])]
-            mid_ch = args[0] if args else input_channels[0]
-            args = [input_channels, mid_ch, *args[1:]]
-            c2 = mid_ch
-        elif m is P2MSFFBranch:
-            assert isinstance(f, list) and len(f) == 2, "P2MSFFBranch expects two inputs (P2, P3)."
-            p2_ch, p3_ch = ch[f[0]], ch[f[1]]
-            branch_ch = args[0] if args else min(p2_ch, 128)
-            out_ch = args[1] if len(args) > 1 else branch_ch
-            args = [p2_ch, p3_ch, branch_ch, out_ch, *args[2:]]
-            c2 = out_ch
-        elif m in frozenset({TorchVision, Index}):
+            fusion_ch = args[0] if args else 64
+            args = [input_channels, fusion_ch]
+            # Output channels are same as input channels (residual design)
+            c2 = input_channels  # list of output channels for each scale
+        elif m is Index:
+            # Index extracts one element from a tuple/list output
+            # args[0] is the index to extract
+            idx = args[0] if args else 0
+            prev_ch = ch[f]
+            # If previous layer output is a list of channels, get the indexed one
+            if isinstance(prev_ch, list):
+                c2 = prev_ch[idx]
+            else:
+                c2 = prev_ch
+            args = [idx]
+        elif m is TorchVision:
             c2 = args[0]
             c1 = ch[f]
             args = [*args[1:]]

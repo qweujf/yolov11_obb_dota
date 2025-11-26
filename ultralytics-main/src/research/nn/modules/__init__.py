@@ -17,8 +17,8 @@ from .afpn import (
     MultiScaleFeatureExtractor,
 )
 from .msff_small_head import (
-    MSFFBlock,
-    P2MSFFBranch,
+    LightMSFF,
+    MSFFBlock,  # alias for LightMSFF
 )
 
 __all__ = (
@@ -35,7 +35,7 @@ __all__ = (
     "MultiScaleFeatureExtractor",
     "SFE_DRB",
     "C3k2_ROAM",
+    "LightMSFF",
     "MSFFBlock",
-    "P2MSFFBranch",
 )
 
