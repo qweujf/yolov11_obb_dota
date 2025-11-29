@@ -157,7 +157,24 @@ class RotatedBboxLoss(BboxLoss):
         fg_mask: torch.Tensor,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         """Compute IoU and DFL losses for rotated bounding boxes."""
+        # 基础权重：来自分类得分的目标置信度和
         weight = target_scores.sum(-1)[fg_mask].unsqueeze(-1)
+
+        # === RAL-lite: 尺度自适应权重（小目标加权） ===
+        # 目标框格式为 xywhr，这里使用 w*h 近似目标面积
+        with torch.no_grad():
+            # (B, HW, 5) -> 选出前景，再取 w,h
+            wh = target_bboxes[..., 2:4][fg_mask]  # (num_fg, 2)
+            area = (wh[..., 0] * wh[..., 1]).clamp_(min=1e-6)  # 避免除零
+            mean_area = area.mean() if area.numel() > 0 else area.new_tensor(1.0)
+            # 小目标：area < mean_area -> scale_factor > 1
+            # 大目标：area > mean_area -> scale_factor < 1
+            scale_factor = (mean_area / area).sqrt()  # α = 0.5
+            # 限制权重范围，避免极端不稳定
+            scale_factor = scale_factor.clamp(0.5, 3.0).unsqueeze(-1)  # (num_fg, 1)
+
+        weight = weight * scale_factor
+
         iou = probiou(pred_bboxes[fg_mask], target_bboxes[fg_mask])
         loss_iou = ((1.0 - iou) * weight).sum() / target_scores_sum
 
@@ -741,6 +758,15 @@ class v8OBBLoss(v8DetectionLoss):
             loss[0], loss[2] = self.bbox_loss(
                 pred_distri, pred_bboxes, anchor_points, target_bboxes, target_scores, target_scores_sum, fg_mask
             )
+
+            # === RAL-lite: 角度一致性正则项（Angle Consistency Regularization） ===
+            # 使用 1 - cos(Δθ) 平滑角度回归，主要约束长条旋转目标的角度稳定性
+            gt_theta = target_bboxes[..., 4][fg_mask]  # (num_fg,)
+            pred_theta = pred_angle[..., 0][fg_mask]   # (num_fg,)
+            angle_diff = pred_theta - gt_theta
+            angle_loss = (1.0 - torch.cos(angle_diff)).mean()
+            # 使用一个较小权重系数，避免压过 IoU 与 DFL（这里固定为 0.1）
+            loss[0] = loss[0] + 0.1 * angle_loss
         else:
             loss[0] += (pred_angle * 0).sum()
 

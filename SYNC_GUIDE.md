@@ -11,8 +11,7 @@ git commit -m "MSFF"
 git push
 git push
 # 2. 在公司电脑上：拉取最新代码
-cd D:\code\yolov11_obb_dota
-git pull
+cd D:\code\yolov11_obb_do
 git pull
 ```
 

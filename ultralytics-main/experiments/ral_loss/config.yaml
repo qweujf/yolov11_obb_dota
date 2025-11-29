@@ -1,0 +1,14 @@
+# RAL-lite 损失实验配置（在 Baseline 基础上，仅修改损失函数）
+
+name: ral_loss_baseline
+
+# 使用与 baseline 相同的模型与数据配置
+# 不在这里显式指定 model/data，直接复用 default.yaml + baseline 逻辑
+
+# 如需覆盖训练参数，可在此添加
+# train:
+#   epochs: 300
+#   batch: 4
+#   imgsz: 1024
+
+
