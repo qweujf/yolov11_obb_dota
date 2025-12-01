@@ -36,28 +36,33 @@ class AdaptiveFeatureAlignment(nn.Module):
             # 默认输出通道数等于两个输入通道数之和（模拟 Concat 行为）
             out_channels = in_channels_low + in_channels_high
 
-        # 通道对齐：将两个特征对齐到相同通道数
+        # 使用较小的中间通道数来减少参数量
+        mid_channels = min(out_channels, max(in_channels_low, in_channels_high))
+
+        # 通道对齐：将两个特征对齐到中间通道数（轻量）
         self.align_low = nn.Sequential(
-            nn.Conv2d(in_channels_low, out_channels, kernel_size=1, bias=False),
-            nn.BatchNorm2d(out_channels),
+            nn.Conv2d(in_channels_low, mid_channels, kernel_size=1, bias=False),
+            nn.BatchNorm2d(mid_channels),
             nn.SiLU(inplace=True),
         )
         self.align_high = nn.Sequential(
-            nn.Conv2d(in_channels_high, out_channels, kernel_size=1, bias=False),
-            nn.BatchNorm2d(out_channels),
+            nn.Conv2d(in_channels_high, mid_channels, kernel_size=1, bias=False),
+            nn.BatchNorm2d(mid_channels),
             nn.SiLU(inplace=True),
         )
 
-        # 轻量级特征增强：空间注意力 + 通道注意力
+        # 轻量级特征增强：空间注意力 + 通道注意力（在中间通道数上）
         self.spatial_att = SpatialAttention()
-        self.channel_att = ChannelAttention(out_channels)
+        self.channel_att = ChannelAttention(mid_channels)
 
-        # 特征融合：融合对齐后的特征
-        self.fusion = nn.Sequential(
-            nn.Conv2d(out_channels * 2, out_channels, kernel_size=3, padding=1, bias=False),
-            nn.BatchNorm2d(out_channels),
+        # 特征融合：先融合到中间通道，再投影到输出通道（轻量）
+        self.fusion_conv = nn.Sequential(
+            nn.Conv2d(mid_channels * 2, mid_channels, kernel_size=1, bias=False),  # 1x1 融合（轻量）
+            nn.BatchNorm2d(mid_channels),
             nn.SiLU(inplace=True),
         )
+        self.output_proj = nn.Conv2d(mid_channels, out_channels, kernel_size=1, bias=False)  # 1x1 投影到输出
+        self.residual_proj = nn.Conv2d(mid_channels, out_channels, kernel_size=1, bias=False) if mid_channels != out_channels else nn.Identity()
 
     def forward(self, features) -> torch.Tensor:
         """
@@ -93,10 +98,12 @@ class AdaptiveFeatureAlignment(nn.Module):
 
         # 4. 特征融合
         fused = torch.cat([feat_low_enhanced, feat_high_enhanced], dim=1)
-        output = self.fusion(fused)
+        fused = self.fusion_conv(fused)
+        output = self.output_proj(fused)
 
-        # 5. 残差连接（使用高分辨率特征作为基础）
-        return feat_high_aligned + output
+        # 5. 残差连接（将高分辨率特征投影到输出通道数）
+        feat_high_proj = self.residual_proj(feat_high_aligned)
+        return feat_high_proj + output
 
 
 class SpatialAttention(nn.Module):
