@@ -26,6 +26,10 @@ from .adaptive_detection_head import (
     ASADH,
     ScaleAwareEnhancement,
 )
+from .adaptive_feature_alignment import (
+    AdaptiveFeatureAlignment,
+    AFA,
+)
 
 __all__ = (
     "MCAttention",
@@ -47,5 +51,7 @@ __all__ = (
     "AdaptiveScaleAwareHead",
     "ASADH",
     "ScaleAwareEnhancement",
+    "AdaptiveFeatureAlignment",
+    "AFA",
 )
 

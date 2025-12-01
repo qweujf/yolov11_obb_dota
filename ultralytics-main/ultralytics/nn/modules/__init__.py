@@ -129,6 +129,10 @@ try:
             AdaptiveScaleAwareHead,
             ASADH,
         )
+        from research.nn.modules.adaptive_feature_alignment import (
+            AdaptiveFeatureAlignment,
+            AFA,
+        )
     else:
         # 如果 research 目录不存在，尝试从本地导入（向后兼容）
         from .mca_attention import (
@@ -150,6 +154,10 @@ try:
         from .adaptive_detection_head import (
             AdaptiveScaleAwareHead,
             ASADH,
+        )
+        from .adaptive_feature_alignment import (
+            AdaptiveFeatureAlignment,
+            AFA,
         )
 except ImportError:
     # 如果导入失败，尝试从本地导入（向后兼容）
@@ -174,6 +182,10 @@ except ImportError:
             AdaptiveScaleAwareHead,
             ASADH,
         )
+        from .adaptive_feature_alignment import (
+            AdaptiveFeatureAlignment,
+            AFA,
+        )
     except ImportError:
         # 如果都失败，定义占位符类
         MCAttention = None
@@ -188,6 +200,8 @@ except ImportError:
         MSFFBlock = None
         AdaptiveScaleAwareHead = None
         ASADH = None
+        AdaptiveFeatureAlignment = None
+        AFA = None
 
 __all__ = (
     "Conv",
@@ -278,4 +292,6 @@ __all__ = (
     "MSFFBlock",
     "AdaptiveScaleAwareHead",
     "ASADH",
+    "AdaptiveFeatureAlignment",
+    "AFA",
 )

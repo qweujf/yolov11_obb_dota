@@ -60,6 +60,8 @@ from ultralytics.nn.modules import (
     MSFFBlock,
     AdaptiveScaleAwareHead,
     ASADH,
+    AdaptiveFeatureAlignment,
+    AFA,
     Pose,
     RepC3,
     RepConv,
@@ -1747,6 +1749,13 @@ def parse_model(d, ch, verbose=True):
             args = [input_channels]
             # Output channels are same as input channels (residual design)
             c2 = input_channels  # list of output channels for each scale
+        elif m in {AdaptiveFeatureAlignment, AFA}:
+            # AFA expects two input features [feat_low, feat_high]
+            assert isinstance(f, list) and len(f) == 2, "AFA expects two input features"
+            ch_low, ch_high = ch[f[0]], ch[f[1]]
+            out_ch = args[0] if args else ch_low
+            args = [ch_low, ch_high, out_ch]
+            c2 = out_ch
         elif m is Index:
             # Index extracts one element from a tuple/list output
             # args[0] is the index to extract

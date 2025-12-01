@@ -1,0 +1,16 @@
+# AFA (Adaptive Feature Alignment) 实验配置
+# Baseline + AFA 特征对齐（在 FPN 内部）
+
+# 实验名称
+name: afa_alignment
+
+# 使用 AFA 模型配置
+model: configs/model/yolo11-obb-afa.yaml
+
+# 如果需要覆盖其他训练参数，可以在这里添加
+# train:
+#   epochs: 300
+#   batch: 4
+#   imgsz: 1024
+#   lr0: 0.01
+
