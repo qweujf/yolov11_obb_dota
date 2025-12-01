@@ -1753,7 +1753,9 @@ def parse_model(d, ch, verbose=True):
             # AFA expects two input features [feat_low, feat_high]
             assert isinstance(f, list) and len(f) == 2, "AFA expects two input features"
             ch_low, ch_high = ch[f[0]], ch[f[1]]
-            out_ch = args[0] if args else ch_low
+            # 输出通道数 = 两个输入通道数之和（模拟 Concat 行为）
+            # 如果指定了 out_ch，使用指定值；否则自动计算
+            out_ch = args[0] if args and len(args) > 0 else (ch_low + ch_high)
             args = [ch_low, ch_high, out_ch]
             c2 = out_ch
         elif m is Index:

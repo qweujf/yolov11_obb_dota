@@ -29,11 +29,12 @@ class AdaptiveFeatureAlignment(nn.Module):
         Args:
             in_channels_low: 低分辨率特征（如 P4）的通道数
             in_channels_high: 高分辨率特征（如 P3）的通道数
-            out_channels: 输出通道数（默认与 in_channels_low 相同）
+            out_channels: 输出通道数（默认等于两个输入通道数之和，与 Concat 行为一致）
         """
         super().__init__()
         if out_channels is None:
-            out_channels = in_channels_low
+            # 默认输出通道数等于两个输入通道数之和（模拟 Concat 行为）
+            out_channels = in_channels_low + in_channels_high
 
         # 通道对齐：将两个特征对齐到相同通道数
         self.align_low = nn.Sequential(

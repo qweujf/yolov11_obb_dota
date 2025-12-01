@@ -26,23 +26,27 @@ backbone:
 head:
   - [-1, 1, nn.Upsample, [None, 2, "nearest"]]  # 11
   # AFA: align P5 (upsampled) with P4 before concat
-  - [[-1, 6], 1, AFA, [512]]  # 12: align and enhance before concat
-  - [-1, 2, C3k2, [512, False]]  # 13
+  # 输出通道数 = P5(256) + P4(128) = 384 (自动计算，不指定)
+  - [[-1, 6], 1, AFA, []]  # 12: align and enhance before concat
+  - [-1, 2, C3k2, [128, False]]  # 13
 
   - [-1, 1, nn.Upsample, [None, 2, "nearest"]]  # 14
   # AFA: align P4 (upsampled) with P3 before concat
-  - [[-1, 4], 1, AFA, [256]]  # 15: align and enhance before concat
-  - [-1, 2, C3k2, [256, False]]  # 16 (P3/8-small)
+  # 输出通道数 = P4(128) + P3(128) = 256 (自动计算)
+  - [[-1, 4], 1, AFA, []]  # 15: align and enhance before concat
+  - [-1, 2, C3k2, [64, False]]  # 16 (P3/8-small)
 
-  - [-1, 1, Conv, [256, 3, 2]]  # 17
+  - [-1, 1, Conv, [64, 3, 2]]  # 17
   # AFA: align P3 (downsampled) with P4 before concat
-  - [[-1, 13], 1, AFA, [512]]  # 18: align and enhance before concat
-  - [-1, 2, C3k2, [512, False]]  # 19 (P4/16-medium)
+  # 输出通道数 = P3(64) + P4(128) = 192 (自动计算)
+  - [[-1, 13], 1, AFA, []]  # 18: align and enhance before concat
+  - [-1, 2, C3k2, [128, False]]  # 19 (P4/16-medium)
 
-  - [-1, 1, Conv, [512, 3, 2]]  # 20
+  - [-1, 1, Conv, [128, 3, 2]]  # 20
   # AFA: align P4 (downsampled) with P5 before concat
-  - [[-1, 10], 1, AFA, [1024]]  # 21: align and enhance before concat
-  - [-1, 2, C3k2, [1024, True]]  # 22 (P5/32-large)
+  # 输出通道数 = P4(128) + P5(256) = 384 (自动计算)
+  - [[-1, 10], 1, AFA, []]  # 21: align and enhance before concat
+  - [-1, 2, C3k2, [256, True]]  # 22 (P5/32-large)
 
   # OBB detection head on three scales (P3/P4/P5)
   - [[16, 19, 22], 1, OBB, [nc, 1]]  # 23: Detect on P3, P4, P5
