@@ -21,6 +21,11 @@ from .msff_small_head import (
     LightMSFF,
     MSFFBlock,
 )
+from .adaptive_detection_head import (
+    AdaptiveScaleAwareHead,
+    ASADH,
+    ScaleAwareEnhancement,
+)
 
 __all__ = (
     "MCAttention",
@@ -39,5 +44,8 @@ __all__ = (
     "MSFF",
     "LightMSFF",
     "MSFFBlock",
+    "AdaptiveScaleAwareHead",
+    "ASADH",
+    "ScaleAwareEnhancement",
 )
 

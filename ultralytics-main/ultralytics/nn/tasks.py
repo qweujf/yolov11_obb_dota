@@ -58,6 +58,8 @@ from ultralytics.nn.modules import (
     MSFF,
     LightMSFF,
     MSFFBlock,
+    AdaptiveScaleAwareHead,
+    ASADH,
     Pose,
     RepC3,
     RepConv,
@@ -1737,6 +1739,12 @@ def parse_model(d, ch, verbose=True):
             input_channels = [ch[x] for x in (f if isinstance(f, list) else [f])]
             fusion_ch = args[0] if args else 64
             args = [input_channels, fusion_ch]
+            # Output channels are same as input channels (residual design)
+            c2 = input_channels  # list of output channels for each scale
+        elif m in {AdaptiveScaleAwareHead, ASADH}:
+            # ASADH expects [P3, P4, P5] input channels
+            input_channels = [ch[x] for x in (f if isinstance(f, list) else [f])]
+            args = [input_channels]
             # Output channels are same as input channels (residual design)
             c2 = input_channels  # list of output channels for each scale
         elif m is Index:
