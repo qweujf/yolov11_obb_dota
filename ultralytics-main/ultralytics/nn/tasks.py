@@ -1759,6 +1759,15 @@ def parse_model(d, ch, verbose=True):
             out_ch = args[0] if args and len(args) > 0 else (ch_low + ch_high)
             args = [ch_low, ch_high, out_ch]
             c2 = out_ch
+        elif m is SFE_DRB:
+            # SFE_DRB expects two input features [current_feat, high_res_feat]
+            assert isinstance(f, list) and len(f) == 2, "SFE_DRB expects two input features"
+            ch_current, ch_hr = ch[f[0]], ch[f[1]]
+            # args format: [c2, use_residual] from YAML, e.g., [256, True]
+            c2_out = args[0] if args and len(args) > 0 else ch_current
+            use_residual = args[1] if args and len(args) > 1 else True
+            args = [ch_current, c2_out, use_residual]
+            c2 = c2_out
         elif m is Index:
             # Index extracts one element from a tuple/list output
             # args[0] is the index to extract
