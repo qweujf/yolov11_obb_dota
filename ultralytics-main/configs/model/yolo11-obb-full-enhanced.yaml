@@ -34,28 +34,27 @@ backbone:
   - [[-1, 7], 1, SFE_DRB, [1024, True]]  # 14: SFE_DRB module
 
 head:
-  # AFA: align P5 (upsampled) with P4 before concat
-  # P5 来自 backbone 最后 (idx 14), P4 来自 backbone idx 7
-  - [-1, 1, nn.Upsample, [None, 2, "nearest"]]   # 15
-  - [[-1, 7], 1, AFA, []]                        # 16: AFA alignment before concat (P5 upsampled + P4)
-  - [-1, 2, C3k2, [512, False]]                  # 17
+  # Head 结构改回标准 FPN（去掉 AFA，对齐方式与 baseline 一致）
+  # 使用 backbone 输出的 P5(idx 14), P4(idx 7), P3(idx 4)
 
-  # AFA: align P4 (upsampled) with P3 before concat
-  # P4 来自 head idx 17, P3 来自 backbone idx 4
+  # 上采样 P5，与 P4 拼接
+  - [-1, 1, nn.Upsample, [None, 2, "nearest"]]   # 15
+  - [[-1, 7], 1, Concat, [1]]                    # 16: cat backbone P4
+  - [-1, 2, C3k2, [512, False]]                  # 17 (FPN P4)
+
+  # 上采样 P4，与 P3 拼接
   - [-1, 1, nn.Upsample, [None, 2, "nearest"]]   # 18
-  - [[-1, 4], 1, AFA, []]                        # 19: AFA alignment before concat (P4 upsampled + P3)
+  - [[-1, 4], 1, Concat, [1]]                    # 19: cat backbone P3
   - [-1, 2, C3k2, [256, False]]                  # 20 (P3/8-small)
 
-  # AFA: align P3 (downsampled) with P4 before concat
-  # P3 来自 head idx 20, P4 来自 head idx 17
+  # 下采样 P3，与 P4 拼接
   - [-1, 1, Conv, [256, 3, 2]]                   # 21
-  - [[-1, 17], 1, AFA, []]                      # 22: AFA alignment before concat (P3 downsampled + P4)
+  - [[-1, 17], 1, Concat, [1]]                   # 22: cat head P4
   - [-1, 2, C3k2, [512, False]]                  # 23 (P4/16-medium)
 
-  # AFA: align P4 (downsampled) with P5 before concat
-  # P4 来自 head idx 23, P5 来自 backbone idx 14
+  # 下采样 P4，与 P5 拼接
   - [-1, 1, Conv, [512, 3, 2]]                   # 24
-  - [[-1, 14], 1, AFA, []]                      # 25: AFA alignment before concat (P4 downsampled + P5)
+  - [[-1, 14], 1, Concat, [1]]                   # 25: cat backbone P5
   - [-1, 2, C3k2, [1024, True]]                  # 26 (P5/32-large)
 
   - [[20, 23, 26], 1, OBB, [nc, 1]]              # 27 Detect(P3, P4, P5)
