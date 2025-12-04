@@ -1,0 +1,19 @@
+# Full Enhanced Model 实验配置
+# Baseline + C3k2_ROAM + SFE_DRB + AFA + RAL Loss
+# 组合了所有改进模块的完整模型
+
+# 实验名称
+name: full_enhanced
+
+# 使用完整增强模型配置
+model: configs/model/yolo11-obb-full-enhanced.yaml
+
+# 如果需要覆盖其他训练参数，可以在这里添加
+# train:
+#   epochs: 300
+#   batch: 4
+#   imgsz: 1024
+#   lr0: 0.01
+#   project: runs/obb/full_enhanced
+#   name: exp1
+
