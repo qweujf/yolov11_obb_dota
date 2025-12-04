@@ -37,6 +37,7 @@ from ultralytics.nn.modules import (
     C3k2,
     C3k2_ROAM,
     C3x,
+    SFE_DRB,
     CBFuse,
     CBLinear,
     Classify,
