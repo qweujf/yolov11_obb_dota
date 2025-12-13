@@ -1,0 +1,22 @@
+Word兼容的公式格式（去掉不支持的语法）：
+
+【方法1：简化LaTeX格式（推荐）】
+F_{out} = \begin{cases} F_{refined} + F, & if shape(F_{refined}) = shape(F) \\ F_{refined}, & otherwise \end{cases}
+
+注意：去掉了 \text{} 命令，直接使用普通文本
+
+【方法2：使用Word公式语法】
+F_out = {█(F_refined+F,  if shape(F_refined)=shape(F)@F_refined,  otherwise)┤
+
+【方法3：分步输入（最可靠）】
+1. 按 Alt + = 打开公式编辑器
+2. 输入：F_out =
+3. 点击"括号" → 选择"分段函数"（大括号模板）
+4. 第一行输入：F_refined + F, if shape(F_refined) = shape(F)
+5. 第二行输入：F_refined, otherwise
+
+【方法4：使用Unicode数学符号】
+F_out = {F_refined + F,  if shape(F_refined) = shape(F)
+        {F_refined,      otherwise
+
+

@@ -1,0 +1,19 @@
+# GhostNet Backbone 实验配置
+# 将整个backbone替换为GhostNet (GhostConv + C3Ghost)
+# 轻量化设计，移除C3k2_ROAM和SFE_DRB创新点
+
+# 实验名称
+name: ghostnet_backbone
+
+# 使用GhostNet backbone模型配置
+model: configs/model/yolo11-obb-ghostnet.yaml
+
+# 如果需要覆盖其他训练参数，可以在这里添加
+# train:
+#   epochs: 300
+#   batch: 4
+#   imgsz: 1024
+#   lr0: 0.01
+#   project: runs/obb/ghostnet_backbone
+#   name: exp1
+
