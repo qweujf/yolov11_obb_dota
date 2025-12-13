@@ -34,7 +34,7 @@ multi_scale: false   # 多尺度训练
 val: true
 split: val
 save_json: false
-conf:                # 置信度（val默认0.001）
+conf: 0.05               # 置信度（val默认0.001）
 iou: 0.7
 max_det: 300
 half: false
