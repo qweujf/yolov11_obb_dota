@@ -19,8 +19,8 @@ def load_yaml_config(config_path: Path) -> Dict[str, Any]:
             loaded = yaml.safe_load(f) or {}
             return loaded if isinstance(loaded, dict) else {}
     except Exception as e:
-        print(f"⚠️ 警告：加载配置文件 {config_path} 失败: {e}")
         return {}
+        print(f"⚠️ 警告：加载配置文件 {config_path} 失败: {e}")
 
 
 def merge_configs(default_cfg: Dict[str, Any], override_cfg: Dict[str, Any]) -> Dict[str, Any]:
