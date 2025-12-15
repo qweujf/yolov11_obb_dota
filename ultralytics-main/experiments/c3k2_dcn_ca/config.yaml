@@ -1,0 +1,17 @@
+# C3k2_DCN_CA 实验配置
+# Enhanced C3k2 module with DCNv2 Bottleneck and Coordinate Attention
+model: configs/model/yolo11-obb-c3k2-dcn-ca.yaml
+
+train:
+  project: runs/obb/c3k2_dcn_ca
+  name: c3k2_dcn_ca_exp
+  # resume: D:/code/yolov11_obb_dota/runs/obb/c3k2_dcn_ca/c3k2_dcn_ca_exp/weights/last.pt
+
+# 如需加载预训练权重可取消注释
+# weights: D:/code/yolov11_obb_dota/ultralytics-main/yolo11n.pt
+
+# 其他可选训练参数
+# train:
+#   epochs: 300
+#   batch: 4
+
