@@ -55,11 +55,15 @@ class DCNv2(nn.Module):
             c1, c2, kernel_size=k, stride=s, padding=p, groups=g, bias=False
         )
         
+        # Project mask to output channels for simplified implementation
+        self.mask_proj = nn.Conv2d(g * k * k, c2, kernel_size=1, stride=1, padding=0, bias=False)
+        
         self.act = (
             nn.SiLU() if act is True else act if isinstance(act, nn.Module) else nn.Identity()
         )
         self.k = k
         self.g = g
+        self.c2 = c2
         
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Forward pass with deformable convolution."""
@@ -70,7 +74,10 @@ class DCNv2(nn.Module):
         # For full DCNv2, would need to use deform_conv2d operation
         # Here we use a simplified version that applies mask to regular conv
         out = self.regular_conv(x)
-        out = out * mask
+        # Project mask to match output channels and apply as attention
+        mask_proj = self.mask_proj(mask)
+        mask_proj = torch.sigmoid(mask_proj)  # Normalize to [0, 1]
+        out = out * (1 + mask_proj)  # Additive attention
         return self.act(out)
 
 
