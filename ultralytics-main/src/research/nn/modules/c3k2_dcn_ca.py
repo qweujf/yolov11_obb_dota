@@ -149,8 +149,20 @@ class DCNv2Bottleneck(nn.Module):
     ):
         super().__init__()
         c_ = int(c2 * e)
-        self.cv1 = Conv(c1, c_, k[0], 1)
-        self.cv2 = DCNv2(c_, c2, k[1], 1, g=g, act=True)
+        # Handle k as tuple of tuples or tuple of ints
+        # k can be ((3, 3), (3, 3)) or (3, 3)
+        if isinstance(k[0], (tuple, list)):
+            k1 = k[0][0]  # Extract first element from first tuple
+        else:
+            k1 = k[0]
+        
+        if isinstance(k[1], (tuple, list)):
+            k2 = k[1][0]  # Extract first element from second tuple
+        else:
+            k2 = k[1]
+        
+        self.cv1 = Conv(c1, c_, k1, 1)
+        self.cv2 = DCNv2(c_, c2, k2, 1, g=g, act=True)
         self.add = shortcut and c1 == c2
     
     def forward(self, x: torch.Tensor) -> torch.Tensor:
