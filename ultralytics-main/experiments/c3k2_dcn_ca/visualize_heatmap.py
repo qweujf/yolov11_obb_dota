@@ -239,24 +239,21 @@ def visualize_for_image(
     save_dir.mkdir(parents=True, exist_ok=True)
     # 创建带 colorbar 的布局：3行图像 + 右侧 colorbar
     fig = plt.figure(figsize=(5, 9))
-    gs = fig.add_gridspec(3, 2, width_ratios=[10, 1], hspace=0.3, wspace=0.1)
+    gs = fig.add_gridspec(3, 2, width_ratios=[10, 1], hspace=0.05, wspace=0.1)
 
     # 第一行：原图
     ax0 = fig.add_subplot(gs[0, 0])
     ax0.imshow(rgb)
-    ax0.set_title("Input", fontsize=12, fontweight='bold')
     ax0.axis("off")
 
     # 第二行：Baseline 热力图
     ax1 = fig.add_subplot(gs[1, 0])
     im1 = ax1.imshow(overlay_base)
-    ax1.set_title("Baseline (C3k2)", fontsize=12, fontweight='bold')
     ax1.axis("off")
 
     # 第三行：C3k2_DCA 热力图
     ax2 = fig.add_subplot(gs[2, 0])
     im2 = ax2.imshow(overlay_dca)
-    ax2.set_title("C3k2_DCA", fontsize=12, fontweight='bold')
     ax2.axis("off")
 
     # 右侧 colorbar（使用第二行的热力图数据）
