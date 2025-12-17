@@ -23,6 +23,7 @@ import random
 
 import cv2
 import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -177,17 +178,35 @@ def load_image(path: Path, imgsz: int, device: str) -> Tuple[torch.Tensor, np.nd
 def overlay_heatmap(
     img_rgb: np.ndarray,
     cam: np.ndarray,
-    alpha: float = 0.4,
+    alpha: float = 0.5,
+    pixelate: bool = True,
 ) -> np.ndarray:
-    """将热力图叠加到灰度原图上，生成可视化结果。"""
+    """
+    将热力图叠加到原图上，生成像素化风格的可视化结果（类似第一行风格）。
+    
+    Args:
+        img_rgb: 原始RGB图像 [H, W, 3]
+        cam: 激活热力图 [H, W]，值域 [0, 1]
+        alpha: 热力图叠加透明度
+        pixelate: 是否生成像素化效果
+    """
+    h, w = img_rgb.shape[:2]
+    
+    # 生成像素化效果：先下采样再上采样
+    if pixelate:
+        # 下采样到较低分辨率（例如原图的1/8）
+        scale = 8
+        cam_low = cv2.resize(cam, (w // scale, h // scale), interpolation=cv2.INTER_NEAREST)
+        # 上采样回原尺寸，使用最近邻插值保持像素化效果
+        cam = cv2.resize(cam_low, (w, h), interpolation=cv2.INTER_NEAREST)
+    
+    # 将激活值映射到 [0, 255] 并应用 JET colormap（蓝->红）
     cam_uint8 = (cam * 255).astype(np.uint8)
     heatmap = cv2.applyColorMap(cam_uint8, cv2.COLORMAP_JET)
     heatmap = cv2.cvtColor(heatmap, cv2.COLOR_BGR2RGB)
-
-    gray = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2GRAY)
-    gray_rgb = cv2.cvtColor(gray, cv2.COLOR_GRAY2RGB)
-
-    overlay = (alpha * heatmap + (1 - alpha) * gray_rgb).astype(np.uint8)
+    
+    # 叠加到彩色原图上（不是灰度），保持原图颜色
+    overlay = (alpha * heatmap + (1 - alpha) * img_rgb).astype(np.uint8)
     return overlay
 
 
@@ -218,23 +237,39 @@ def visualize_for_image(
     overlay_dca = overlay_heatmap(rgb, cam_dca)
 
     save_dir.mkdir(parents=True, exist_ok=True)
-    fig, axes = plt.subplots(3, 1, figsize=(4, 9))
+    # 创建带 colorbar 的布局：3行图像 + 右侧 colorbar
+    fig = plt.figure(figsize=(5, 9))
+    gs = fig.add_gridspec(3, 2, width_ratios=[10, 1], hspace=0.3, wspace=0.1)
 
-    axes[0].imshow(rgb)
-    axes[0].set_title("Input")
-    axes[0].axis("off")
+    # 第一行：原图
+    ax0 = fig.add_subplot(gs[0, 0])
+    ax0.imshow(rgb)
+    ax0.set_title("Input", fontsize=12, fontweight='bold')
+    ax0.axis("off")
 
-    axes[1].imshow(overlay_base)
-    axes[1].set_title("Baseline (C3k2)")
-    axes[1].axis("off")
+    # 第二行：Baseline 热力图
+    ax1 = fig.add_subplot(gs[1, 0])
+    im1 = ax1.imshow(overlay_base)
+    ax1.set_title("Baseline (C3k2)", fontsize=12, fontweight='bold')
+    ax1.axis("off")
 
-    axes[2].imshow(overlay_dca)
-    axes[2].set_title("C3k2_DCA")
-    axes[2].axis("off")
+    # 第三行：C3k2_DCA 热力图
+    ax2 = fig.add_subplot(gs[2, 0])
+    im2 = ax2.imshow(overlay_dca)
+    ax2.set_title("C3k2_DCA", fontsize=12, fontweight='bold')
+    ax2.axis("off")
 
-    plt.tight_layout()
+    # 右侧 colorbar（使用第二行的热力图数据）
+    cbar_ax = fig.add_subplot(gs[1:, 1])
+    # 创建归一化的 colormap 用于 colorbar
+    sm = plt.cm.ScalarMappable(cmap=plt.cm.jet, norm=plt.Normalize(vmin=0, vmax=1))
+    sm.set_array([])
+    cbar = plt.colorbar(sm, cax=cbar_ax, orientation='vertical')
+    cbar.set_label('Activation', rotation=270, labelpad=15, fontsize=10)
+    cbar.ax.set_yticklabels(['Low', '', '', '', 'High'], fontsize=9)
+
     out_path = save_dir / f"{img_path.stem}_heatmap.png"
-    fig.savefig(out_path, dpi=300)
+    fig.savefig(out_path, dpi=300, bbox_inches='tight')
     plt.close(fig)
     print(f"[保存] {out_path}")
 
