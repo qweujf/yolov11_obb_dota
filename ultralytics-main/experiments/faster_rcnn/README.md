@@ -24,13 +24,57 @@
 
 ### 训练
 ```bash
+# 使用默认配置文件（当前目录下的 config.yaml）
+python train.py
+
+# 或指定配置文件
 python train.py --config config.yaml --seed 42 --device 0
 ```
 
 ### 评估
 ```bash
-python eval.py --config config.yaml --ckpt <checkpoint_path>
+python eval.py --ckpt <checkpoint_path>
 ```
+
+## 环境要求
+
+### 安装 mmdetection
+
+```bash
+# 方式1：使用 pip（推荐）
+pip install mmdet mmengine mmcv
+
+# 方式2：使用 conda
+conda install -c conda-forge mmdet
+```
+
+### 验证安装
+
+```bash
+python -c "from mmdet.apis import init_detector; print('✅ mmdetection 安装成功')"
+```
+
+## ⚠️ 重要提示
+
+### 关于 DOTA 数据集
+
+**Faster R-CNN 是水平框检测器，而 DOTA 数据集使用旋转框标注。**
+
+在使用 Faster R-CNN 进行对比实验时，需要：
+
+1. **将旋转框转换为水平框**：使用旋转框的最小外接矩形（MBR）作为水平框
+2. **或使用 mmrotate**：如果需要真正的旋转目标检测，建议使用 mmrotate 框架中的 Oriented R-CNN
+
+### 数据集格式转换
+
+脚本会自动创建 mmdetection 配置文件，但需要确保：
+
+1. DOTA 数据集已转换为 COCO 格式（水平框）
+2. 或者修改配置文件中的数据路径和格式
+
+### 自动配置
+
+运行 `train.py` 时，如果 `faster_rcnn_config.py` 不存在，脚本会自动创建一个基础配置文件。你可以根据需要修改该配置文件。
 
 ## 结果记录
 
