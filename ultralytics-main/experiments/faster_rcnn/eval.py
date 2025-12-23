@@ -10,7 +10,12 @@ from pathlib import Path
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Evaluate Faster R-CNN on DOTAv2.0')
-    parser.add_argument('--config', type=str, required=True, help='配置文件路径')
+    # 获取脚本所在目录
+    script_dir = Path(__file__).parent
+    default_config = script_dir / 'config.yaml'
+    
+    parser.add_argument('--config', type=str, default=str(default_config),
+                       help=f'配置文件路径（默认: {default_config}）')
     parser.add_argument('--ckpt', type=str, required=True, help='模型检查点路径')
     parser.add_argument('--device', type=str, default='0', help='GPU 设备ID')
     return parser.parse_args()
@@ -18,7 +23,11 @@ def parse_args():
 
 def load_config(config_path):
     """加载配置文件"""
-    with open(config_path, 'r', encoding='utf-8') as f:
+    config_file = Path(config_path)
+    if not config_file.exists():
+        raise FileNotFoundError(f"配置文件不存在: {config_path}")
+    
+    with open(config_file, 'r', encoding='utf-8') as f:
         config = yaml.safe_load(f)
     return config
 
