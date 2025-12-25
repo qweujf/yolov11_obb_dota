@@ -22,9 +22,54 @@
 
 ## 环境要求
 
+### ⚠️ 重要：确保使用正确的 Python 环境
+
+如果你使用 conda 环境，请确保：
+1. **激活正确的环境**后再安装和运行：
+   ```bash
+   # PowerShell 中
+   conda activate yolov8_seg
+   
+   # 或者 CMD 中
+   conda activate yolov8_seg
+   ```
+
+2. **验证当前 Python 环境**：
+   ```bash
+   python -c "import sys; print(sys.executable)"
+   ```
+   应该显示你激活的环境路径，例如：`g:\install_app\anaconda\envs\yolov8_seg\python.exe`
+
 ### 安装 mmrotate
 
 mmrotate 是 mmdetection 的旋转目标检测扩展框架，支持 Oriented R-CNN 等旋转目标检测算法。
+
+#### Windows 安装（推荐）
+
+在 Windows 上，`mmcv` 需要特殊处理，建议使用预编译版本：
+
+```bash
+# 1. 先升级构建工具
+pip install --upgrade pip setuptools wheel
+
+# 2. 安装 mmcv-lite（轻量版，不需要编译，推荐）
+pip install mmcv-lite
+
+# 或者安装预编译的 mmcv-full（需要根据你的 CUDA 和 PyTorch 版本选择）
+# 查看你的 PyTorch 和 CUDA 版本：
+python -c "import torch; print(f'PyTorch: {torch.__version__}, CUDA: {torch.version.cuda}')"
+
+# 然后根据版本安装，例如 CUDA 11.8 + PyTorch 2.0：
+# pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu118/torch2.0.0/index.html
+
+# 3. 安装其他依赖
+pip install mmengine mmdet
+
+# 4. 安装 mmrotate
+pip install mmrotate
+```
+
+#### Linux 安装
 
 ```bash
 # 方式1：使用 pip（推荐）
@@ -35,6 +80,15 @@ git clone https://github.com/open-mmlab/mmrotate.git
 cd mmrotate
 pip install -v -e .
 ```
+
+#### 常见问题
+
+**问题1：`metadata-generation-failed` 错误**
+- **原因**：Windows 上 `mmcv` 从源码编译失败
+- **解决**：使用 `mmcv-lite` 或预编译的 `mmcv-full`
+
+**问题2：找不到预编译版本**
+- **解决**：使用 `mmcv-lite`，它是轻量版，功能足够使用
 
 ### 验证安装
 

@@ -9,17 +9,52 @@ import sys
 from pathlib import Path
 
 # 检查 mmrotate 是否安装
+MMRotate_AVAILABLE = False
+missing_packages = []
+
 try:
-    from mmrotate.apis import init_detector, inference_detector_by_patches
+    import mmcv
+except ImportError:
+    missing_packages.append("mmcv")
+
+try:
+    import mmengine
     from mmengine.config import Config
     from mmengine.runner import Runner
-    from mmdet.datasets import build_dataloader, build_dataset
-    from mmrotate.evaluation import DOTAMetric
-    MMRotate_AVAILABLE = True
 except ImportError:
+    missing_packages.append("mmengine")
+
+try:
+    from mmdet.datasets import build_dataloader, build_dataset
+except ImportError:
+    missing_packages.append("mmdet")
+
+try:
+    from mmrotate.apis import init_detector, inference_detector_by_patches
+    from mmrotate.evaluation import DOTAMetric
+except ImportError:
+    missing_packages.append("mmrotate")
+
+if missing_packages:
     MMRotate_AVAILABLE = False
-    print("⚠️  警告：mmrotate 未安装，请先安装：")
-    print("   pip install mmrotate mmdet mmengine mmcv")
+    print("⚠️  警告：以下包未安装：")
+    for pkg in missing_packages:
+        print(f"   - {pkg}")
+    print("\n请按以下步骤安装：")
+    print("   1. 如果已安装 mmcv-full，可以跳过 mmcv")
+    print("   2. 安装缺失的包：")
+    if "mmcv" in missing_packages:
+        print("      pip install mmcv-lite  # 或 mmcv-full（如果已安装可跳过）")
+    if "mmengine" in missing_packages:
+        print("      pip install mmengine")
+    if "mmdet" in missing_packages:
+        print("      pip install mmdet")
+    if "mmrotate" in missing_packages:
+        print("      pip install mmrotate")
+    print("\n   或者一次性安装所有依赖：")
+    print("      pip install mmcv-lite mmengine mmdet mmrotate")
+else:
+    MMRotate_AVAILABLE = True
 
 
 def parse_args():
@@ -54,9 +89,8 @@ def main():
     args = parse_args()
     
     if not MMRotate_AVAILABLE:
-        print("\n❌ 错误：mmrotate 未安装")
-        print("请先安装 mmrotate：")
-        print("  pip install mmrotate mmdet mmengine mmcv")
+        print("\n❌ 错误：必要的包未安装")
+        print("请按照上面的提示安装缺失的包")
         return 1
     
     # 加载 YAML 配置
