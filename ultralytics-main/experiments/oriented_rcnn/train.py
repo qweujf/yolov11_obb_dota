@@ -12,35 +12,59 @@ from pathlib import Path
 # 检查 mmrotate 是否安装
 MMRotate_AVAILABLE = False
 missing_packages = []
+import_errors = {}
 
+# 检查 mmcv
 try:
     import mmcv
-except ImportError:
+    mmcv_ok = True
+except Exception as e:
     missing_packages.append("mmcv")
+    import_errors["mmcv"] = str(e)
+    mmcv_ok = False
 
+# 检查 mmengine
+mmengine_ok = False
 try:
     import mmengine
-    from mmengine.config import Config
-    from mmengine.runner import Runner
-    from mmengine.utils import set_random_seed
-except ImportError:
+    try:
+        from mmengine.config import Config
+        from mmengine.runner import Runner
+        from mmengine.utils import set_random_seed
+        mmengine_ok = True
+    except Exception as e:
+        import_errors["mmengine"] = f"模块导入失败: {str(e)}"
+except Exception as e:
     missing_packages.append("mmengine")
+    import_errors["mmengine"] = str(e)
 
+# 检查 mmdet
 try:
     import mmdet
-except ImportError:
+    mmdet_ok = True
+except Exception as e:
     missing_packages.append("mmdet")
+    import_errors["mmdet"] = str(e)
+    mmdet_ok = False
 
+# 检查 mmrotate
+mmrotate_ok = False
 try:
     from mmrotate.apis import init_detector, train_detector
-except ImportError:
+    mmrotate_ok = True
+except Exception as e:
     missing_packages.append("mmrotate")
+    import_errors["mmrotate"] = str(e)
 
-if missing_packages:
+# 如果所有包都正常，设置可用标志
+if mmcv_ok and mmengine_ok and mmdet_ok and mmrotate_ok:
+    MMRotate_AVAILABLE = True
+else:
     MMRotate_AVAILABLE = False
-    print("⚠️  警告：以下包未安装：")
+    print("⚠️  警告：以下包未安装或导入失败：")
     for pkg in missing_packages:
-        print(f"   - {pkg}")
+        error_msg = import_errors.get(pkg, "未知错误")
+        print(f"   - {pkg}: {error_msg}")
     print("\n请按以下步骤安装：")
     print("   1. 如果已安装 mmcv-full，可以跳过 mmcv")
     print("   2. 安装缺失的包：")
@@ -54,8 +78,8 @@ if missing_packages:
         print("      pip install mmrotate")
     print("\n   或者一次性安装所有依赖：")
     print("      pip install mmcv-lite mmengine mmdet mmrotate")
-else:
-    MMRotate_AVAILABLE = True
+    print("\n   注意：请确保在正确的 conda 环境中安装")
+    print(f"   当前 Python: {sys.executable}")
 
 
 def parse_args():
