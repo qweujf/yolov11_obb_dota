@@ -52,9 +52,21 @@ mmrotate_ok = False
 try:
     from mmrotate.apis import init_detector, train_detector
     mmrotate_ok = True
+except ImportError as e:
+    missing_packages.append("mmrotate")
+    error_msg = str(e)
+    # 检查是否是 DLL 加载失败
+    if "DLL load failed" in error_msg or "_ext" in error_msg:
+        import_errors["mmrotate"] = f"DLL 加载失败（通常是 mmcv-full 的 C++ 扩展问题）: {error_msg}"
+    else:
+        import_errors["mmrotate"] = error_msg
 except Exception as e:
     missing_packages.append("mmrotate")
-    import_errors["mmrotate"] = str(e)
+    error_msg = str(e)
+    if "DLL load failed" in error_msg or "_ext" in error_msg:
+        import_errors["mmrotate"] = f"DLL 加载失败（通常是 mmcv-full 的 C++ 扩展问题）: {error_msg}"
+    else:
+        import_errors["mmrotate"] = error_msg
 
 # 如果所有包都正常，设置可用标志
 if mmcv_ok and mmengine_ok and mmdet_ok and mmrotate_ok:
@@ -65,6 +77,31 @@ else:
     for pkg in missing_packages:
         error_msg = import_errors.get(pkg, "未知错误")
         print(f"   - {pkg}: {error_msg}")
+    
+    # 特殊处理 DLL 加载失败的情况
+    if "mmrotate" in missing_packages and "DLL load failed" in import_errors.get("mmrotate", ""):
+        print("\n" + "="*60)
+        print("🔧 DLL 加载失败解决方案（Windows 常见问题）")
+        print("="*60)
+        print("\n问题原因：mmcv-full 的 C++ 扩展与当前环境不兼容")
+        print("\n解决方案（按顺序尝试）：")
+        print("\n方案1：使用 mmcv-lite（推荐，最简单）")
+        print("   pip uninstall mmcv-full -y")
+        print("   pip install mmcv-lite")
+        print("   # mmcv-lite 不需要 C++ 扩展，兼容性更好")
+        print("\n方案2：重新安装兼容的 mmcv-full")
+        print("   # 先查看 PyTorch 和 CUDA 版本")
+        print("   python -c \"import torch; print(f'PyTorch: {torch.__version__}, CUDA: {torch.version.cuda}')\"")
+        print("   # 然后安装对应版本的预编译 mmcv-full")
+        print("   # 例如 CUDA 11.8 + PyTorch 2.0:")
+        print("   pip uninstall mmcv-full -y")
+        print("   pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/cu118/torch2.0.0/index.html")
+        print("\n方案3：安装 Visual C++ Redistributable")
+        print("   下载并安装：https://aka.ms/vs/17/release/vc_redist.x64.exe")
+        print("\n方案4：检查环境变量")
+        print("   确保 PATH 中包含必要的 DLL 路径")
+        print("="*60)
+    
     print("\n请按以下步骤安装：")
     print("   1. 如果已安装 mmcv-full，可以跳过 mmcv")
     print("   2. 安装缺失的包：")
@@ -74,7 +111,7 @@ else:
         print("      pip install mmengine")
     if "mmdet" in missing_packages:
         print("      pip install mmdet")
-    if "mmrotate" in missing_packages:
+    if "mmrotate" in missing_packages and "DLL load failed" not in import_errors.get("mmrotate", ""):
         print("      pip install mmrotate")
     print("\n   或者一次性安装所有依赖：")
     print("      pip install mmcv-lite mmengine mmdet mmrotate")

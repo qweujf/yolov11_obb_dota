@@ -90,6 +90,17 @@ pip install -v -e .
 **问题2：找不到预编译版本**
 - **解决**：使用 `mmcv-lite`，它是轻量版，功能足够使用
 
+**问题3：`DLL load failed while importing _ext` 错误**
+- **原因**：mmcv-full 的 C++ 扩展与当前环境不兼容（Windows 常见问题）
+- **解决方案**：
+  1. **推荐**：使用 `mmcv-lite`（不需要 C++ 扩展）
+     ```bash
+     pip uninstall mmcv-full -y
+     pip install mmcv-lite
+     ```
+  2. 重新安装兼容的 `mmcv-full`（根据 PyTorch 和 CUDA 版本）
+  3. 安装 Visual C++ Redistributable：https://aka.ms/vs/17/release/vc_redist.x64.exe
+
 ### 验证安装
 
 ```bash
