@@ -71,7 +71,12 @@ def solution1_install_compatible_mmcv_full():
     try:
         import torch
         torch_version = torch.__version__
-        if "2.0" in torch_version:
+        # 检查实际版本
+        if "2.4" in torch_version:
+            # PyTorch 2.4，尝试使用 2.0 的 mmcv（向后兼容）
+            torch_ver = "2.0.0"
+            print("⚠️  注意：PyTorch 2.4 可能不兼容，尝试使用 PyTorch 2.0 的 mmcv")
+        elif "2.0" in torch_version:
             torch_ver = "2.0.0"
         elif "1.13" in torch_version:
             torch_ver = "1.13.0"
@@ -99,7 +104,17 @@ def solution1_install_compatible_mmcv_full():
         run_cmd("pip install mmrotate==0.3.4", "安装 mmrotate")
         
         print("\n步骤4：测试导入")
-        return test_import()
+        result = test_import()
+        if not result:
+            print("\n⚠️  DLL 加载失败，可能的原因：")
+            print("   1. mmcv-full 版本与 PyTorch/CUDA 版本不完全匹配")
+            print("   2. 缺少 Visual C++ Redistributable")
+            print("   3. 环境变量 PATH 中缺少必要的 DLL 路径")
+            print("\n建议：")
+            print("   1. 安装 Visual C++ Redistributable: https://aka.ms/vs/17/release/vc_redist.x64.exe")
+            print("   2. 安装后重启终端/IDE")
+            print("   3. 如果还是不行，可能需要降级 PyTorch 到 2.0.0")
+        return result
     else:
         print("\n❌ 无法安装 mmcv-full，尝试方案2")
         return False
