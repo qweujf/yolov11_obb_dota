@@ -1,6 +1,6 @@
 task: obb
 mode: train
-model: D:\code\yolov11_obb_dota\ultralytics-main\yolo11n-obb.pt
+model: yolov8n-obb.pt
 data: D:\code\yolov11_obb_dota\ultralytics-main\configs\data\dota_obb.yaml
 epochs: 300
 time: null
@@ -13,9 +13,9 @@ cache: false
 device: '0'
 workers: 4
 project: null
-name: baseline
+name: yolov8n_obb_dota
 exist_ok: true
-pretrained: false
+pretrained: true
 optimizer: SGD
 verbose: true
 seed: 42
@@ -102,4 +102,4 @@ auto_augment: randaugment
 erasing: 0.4
 cfg: null
 tracker: botsort.yaml
-save_dir: D:\code\yolov11_obb_dota\runs\obb\baseline
+save_dir: D:\code\yolov11_obb_dota\runs\obb\yolov8n_obb_dota
