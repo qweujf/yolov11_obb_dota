@@ -1,0 +1,23 @@
+# GhostNetV2 Backbone 实验配置
+# 将 YOLO_DDBC 的骨干网络替换为 GhostNetV2
+# Neck 和 Head 保持不变：DDPG + BiFPN_DWC + CSL_ProbIoU
+
+# 实验名称
+name: yolo_ddbc_ghostnetv2_backbone
+
+# 使用 GhostNetV2 骨干网络配置
+# 骨干网络结构：
+# Conv → GhostConv → C3Ghost → DFC Attention → GhostConv → C3Ghost → DFC Attention → 
+# GhostConv → C3Ghost → DFC Attention → GhostConv → SPPF → C2PSA
+model: configs/model/yolo11-obb-ddbc-ghostnetv2.yaml
+
+# 训练参数
+train:
+  project: runs/obb/ablation_ghostnetv2_backbone
+  name: ghostnetv2_backbone
+  epochs: 300
+  batch: 4
+  imgsz: 1024
+  device: 0
+  # 其他参数使用默认配置
+

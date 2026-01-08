@@ -1,0 +1,22 @@
+# YOLO_DDBC Baseline 实验配置
+# 完整的 YOLO_DDBC 模型（第三章完整模型）
+# 包含：C3k2_DCA + DDPG + BiFPN_DWC + CSL_ProbIoU
+
+# 实验名称
+name: yolo_ddbc_baseline
+
+# 使用 YOLO_DDBC 完整模型配置
+# 注意：如果还没有 YOLO_DDBC 的配置文件，需要先创建
+# 模型应包含：C3k2_DCA（骨干）、DDPG（Neck）、BiFPN_DWC（Neck）、CSL_ProbIoU（损失函数）
+model: configs/model/yolo11-obb-ddbc.yaml
+
+# 训练参数
+train:
+  project: runs/obb/ablation_ghostnetv2_backbone
+  name: baseline_yolo_ddbc
+  epochs: 300
+  batch: 4
+  imgsz: 1024
+  device: 0
+  # 其他参数使用默认配置
+
