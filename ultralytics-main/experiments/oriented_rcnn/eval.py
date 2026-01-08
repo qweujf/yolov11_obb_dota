@@ -30,7 +30,8 @@ except ImportError:
     missing_packages.append("mmdet")
 
 try:
-    from mmrotate.apis import init_detector, inference_detector_by_patches
+    from mmdet.apis import init_detector
+    from mmrotate.apis import inference_detector_by_patches
     from mmrotate.evaluation import DOTAMetric
 except ImportError:
     missing_packages.append("mmrotate")
