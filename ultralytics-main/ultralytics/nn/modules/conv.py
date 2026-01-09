@@ -23,6 +23,7 @@ __all__ = (
     "Concat",
     "RepConv",
     "Index",
+    "DFC_Attention",
 )
 
 
@@ -370,6 +371,83 @@ class GhostConv(nn.Module):
         """
         y = self.cv1(x)
         return torch.cat((y, self.cv2(y)), 1)
+
+
+class DFC_Attention(nn.Module):
+    """
+    Decoupled Fully Connected Attention (DFC Attention) module.
+    
+    Hardware-friendly attention mechanism that captures long-range dependencies
+    by decoupling attention into horizontal and vertical directions.
+    
+    References:
+        GhostNetV2: Enhance Cheap Operation with Long-Range Attention
+        https://arxiv.org/abs/2211.12905
+    """
+    
+    def __init__(self, c1, act=True):
+        """
+        Initialize DFC Attention module.
+        
+        Args:
+            c1 (int): Number of input/output channels.
+            act (bool | nn.Module): Activation function.
+        """
+        super().__init__()
+        self.c1 = c1
+        
+        # Horizontal direction FC: processes W dimension
+        self.fc_h = nn.Linear(c1, c1, bias=False)
+        
+        # Vertical direction FC: processes H dimension
+        self.fc_v = nn.Linear(c1, c1, bias=False)
+        
+        # Activation function
+        self.act = nn.SiLU() if act is True else act if isinstance(act, nn.Module) else nn.Identity()
+        
+    def forward(self, x):
+        """
+        Apply DFC Attention to input tensor.
+        
+        Args:
+            x (torch.Tensor): Input tensor of shape (B, C, H, W).
+            
+        Returns:
+            (torch.Tensor): Output tensor with attention applied.
+        """
+        B, C, H, W = x.shape
+        identity = x
+        
+        # Horizontal attention: process along W dimension
+        # Transpose: (B, C, H, W) -> (B, H, W, C) for FC operation
+        x_transposed = x.permute(0, 2, 3, 1).contiguous()  # (B, H, W, C)
+        x_h_flat = x_transposed.view(B * H, W, C)  # (B*H, W, C)
+        # Apply FC: (B*H, W, C) -> (B*H, W, C)
+        x_h_fc = self.fc_h(x_h_flat)
+        # Get attention weights: (B*H, W, C)
+        w_h = torch.sigmoid(x_h_fc)
+        # Reshape back: (B*H, W, C) -> (B, H, W, C) -> (B, C, H, W)
+        w_h = w_h.view(B, H, W, C).permute(0, 3, 1, 2).contiguous()
+        # Apply horizontal attention: X_h = X ⊙ W_h
+        x_h = x * w_h
+        
+        # Vertical attention: process along H dimension
+        # (B, C, H, W) -> (B, W, H, C) for FC operation
+        x_h_transposed = x_h.permute(0, 3, 2, 1).contiguous()  # (B, W, H, C)
+        x_v_flat = x_h_transposed.view(B * W, H, C)  # (B*W, H, C)
+        # Apply FC: (B*W, H, C) -> (B*W, H, C)
+        x_v_fc = self.fc_v(x_v_flat)
+        # Get attention weights: (B*W, H, C)
+        w_v = torch.sigmoid(x_v_fc)
+        # Reshape back: (B*W, H, C) -> (B, W, H, C) -> (B, C, H, W)
+        w_v = w_v.view(B, W, H, C).permute(0, 3, 2, 1).contiguous()
+        # Apply vertical attention: X_v = X_h ⊙ W_v
+        x_v = x_h * w_v
+        
+        # Residual connection: Y = X + X_v
+        out = identity + x_v
+        
+        return self.act(out)
 
 
 class RepConv(nn.Module):
