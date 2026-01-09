@@ -30,9 +30,10 @@ try:
     try:
         from mmengine.config import Config
         from mmengine.runner import Runner
-        from mmengine.utils import set_random_seed
+        # set_random_seed 在新版本中可能不存在，通过配置设置随机种子即可
         mmengine_ok = True
     except Exception as e:
+        missing_packages.append("mmengine")
         import_errors["mmengine"] = f"模块导入失败: {str(e)}"
 except Exception as e:
     missing_packages.append("mmengine")
@@ -50,7 +51,9 @@ except Exception as e:
 # 检查 mmrotate
 mmrotate_ok = False
 try:
-    from mmrotate.apis import init_detector, train_detector
+    # init_detector 在 mmdet.apis 中，train_detector 在 mmrotate.apis 中
+    from mmdet.apis import init_detector
+    from mmrotate.apis import train_detector
     mmrotate_ok = True
 except ImportError as e:
     missing_packages.append("mmrotate")
@@ -74,10 +77,20 @@ if mmcv_ok and mmengine_ok and mmdet_ok and mmrotate_ok:
 else:
     MMRotate_AVAILABLE = False
     print("⚠️  警告：以下包未安装或导入失败：")
+    # 检查所有包的状态，即使不在 missing_packages 中也要显示
+    if not mmcv_ok:
+        print(f"   - mmcv: {import_errors.get('mmcv', '未知错误')}")
+    if not mmengine_ok:
+        print(f"   - mmengine: {import_errors.get('mmengine', '未知错误')}")
+    if not mmdet_ok:
+        print(f"   - mmdet: {import_errors.get('mmdet', '未知错误')}")
+    if not mmrotate_ok:
+        print(f"   - mmrotate: {import_errors.get('mmrotate', '未知错误')}")
     for pkg in missing_packages:
-        error_msg = import_errors.get(pkg, "未知错误")
-        print(f"   - {pkg}: {error_msg}")
-    
+        if pkg not in ['mmcv', 'mmengine', 'mmdet', 'mmrotate']:  # 避免重复显示
+            error_msg = import_errors.get(pkg, "未知错误")
+            print(f"   - {pkg}: {error_msg}")
+
     # 特殊处理 DLL 加载失败的情况
     if "mmrotate" in missing_packages and "DLL load failed" in import_errors.get("mmrotate", ""):
         print("\n" + "="*60)
@@ -119,7 +132,7 @@ else:
         print("   pip install mmdet==2.28.0")
         print("   pip install mmrotate==0.3.3")
         print("="*60)
-    
+
     print("\n请按以下步骤安装：")
     print("   1. 如果已安装 mmcv-full，可以跳过 mmcv")
     print("   2. 安装缺失的包：")
@@ -143,8 +156,8 @@ def parse_args():
     script_dir = Path(__file__).parent
     default_config = script_dir / 'config.yaml'
     default_mmrotate_config = script_dir / 'oriented_rcnn_config.py'
-    
-    parser.add_argument('--config', type=str, default=str(default_config), 
+
+    parser.add_argument('--config', type=str, default=str(default_config),
                        help=f'YAML 配置文件路径（默认: {default_config}）')
     parser.add_argument('--mmrotate-config', type=str, default=str(default_mmrotate_config),
                        help=f'mmrotate 配置文件路径（默认: {default_mmrotate_config}）')
@@ -161,7 +174,7 @@ def load_yaml_config(config_path):
     config_file = Path(config_path)
     if not config_file.exists():
         raise FileNotFoundError(f"配置文件不存在: {config_path}")
-    
+
     with open(config_file, 'r', encoding='utf-8') as f:
         config = yaml.safe_load(f)
     return config
@@ -171,30 +184,27 @@ def create_mmrotate_config_if_not_exists(config_path, yaml_config, seed=42):
     """如果 mmrotate 配置文件不存在，创建一个基础配置"""
     if Path(config_path).exists():
         return
-    
+
     print(f"📝 创建 mmrotate 配置文件: {config_path}")
-    
+
     # 从 YAML 配置中读取参数
     train_cfg = yaml_config.get('train', {})
     model_cfg = yaml_config.get('model', {})
     data_cfg = yaml_config.get('data', {})
-    
-    # 创建基础 Oriented R-CNN 配置
-    config_content = f'''# Oriented R-CNN 配置文件
-# 基于 mmrotate 框架
 
-_base_ = [
-    'mmrotate::_base_/datasets/dotav2.py',
-    'mmrotate::_base_/schedules/schedule_1x.py',
-    'mmrotate::_base_/default_runtime.py'
-]
+    # 创建完整的独立配置（不依赖 base，避免路径问题）
+    data_root = data_cfg.get("path", "data/DOTAv2.0")
+    num_classes = data_cfg.get('nc', 15)
+
+    config_content = f'''# Oriented R-CNN 配置文件
+# 基于 mmrotate 框架的完整独立配置
 
 # 模型配置
 model = dict(
     type='OrientedRCNN',
     backbone=dict(
         type='ResNet',
-        depth={50 if model_cfg.get('backbone', 'resnet50') == 'resnet50' else 101},
+        depth=50,
         num_stages=4,
         out_indices=(0, 1, 2, 3),
         frozen_stages=1,
@@ -211,7 +221,7 @@ model = dict(
         type='OrientedRPNHead',
         in_channels=256,
         feat_channels=256,
-        version='oc',
+        version='le90',
         anchor_generator=dict(
             type='AnchorGenerator',
             scales=[8],
@@ -236,10 +246,10 @@ model = dict(
             in_channels=256,
             fc_out_channels=1024,
             roi_feat_size=7,
-            num_classes={data_cfg.get('nc', 15)},
+            num_classes={num_classes},
             bbox_coder=dict(
                 type='DeltaXYWHTRBBoxCoder',
-                angle_range='oc',
+                angle_range='le90',
                 norm_factor=None,
                 edge_swap=True,
                 proj_xy=True,
@@ -299,9 +309,11 @@ model = dict(
             nms=dict(type='nms_rotated', iou_threshold=0.1),
             max_per_img=2000)))
 
-# 数据集配置
-data_root = '{data_cfg.get("path", "data/DOTAv2.0")}'
+# 数据集配置（1.x 系统格式）
+data_root = '{data_root}'
 data = dict(
+    samples_per_gpu={train_cfg.get('batch_size', 4)},
+    workers_per_gpu={train_cfg.get('workers', 4)},
     train=dict(
         type='DOTADataset',
         ann_file=data_root + '/train/annfiles/',
@@ -337,88 +349,143 @@ data = dict(
             dict(type='mmdet.PackDetInputs')
         ]))
 
-# 训练配置
-train_dataloader = dict(batch_size={train_cfg.get('batch_size', 4)})
-val_dataloader = dict(batch_size={train_cfg.get('batch_size', 4)})
-test_dataloader = dict(batch_size={train_cfg.get('batch_size', 4)})
+# 优化器配置（1.x 格式）
+optimizer = dict(type='SGD', lr={train_cfg.get('lr0', 0.01)}, momentum={train_cfg.get('momentum', 0.937)}, weight_decay={train_cfg.get('weight_decay', 0.0005)})
+optimizer_config = dict(grad_clip=None)
 
-# 优化器配置
-optim_wrapper = dict(
-    optimizer=dict(
-        type='SGD',
-        lr={train_cfg.get('lr0', 0.01)},
-        momentum={train_cfg.get('momentum', 0.937)},
-        weight_decay={train_cfg.get('weight_decay', 0.0005)}))
+# 学习率调度器（1.x 格式）
+lr_config = dict(
+    policy='step',
+    warmup='linear',
+    warmup_iters=500,
+    warmup_ratio=0.001,
+    step=[200, 250])
 
-# 学习率调度器
-param_scheduler = [
-    dict(
-        type='LinearLR', start_factor=0.001, by_epoch=False, begin=0, end={int(train_cfg.get('warmup_epochs', 3) * 1000)}),
-    dict(
-        type='MultiStepLR',
-        begin=0,
-        end={train_cfg.get('epochs', 300)},
-        by_epoch=True,
-        milestones=[8, 11],
-        gamma=0.1)
-]
+# Runner 配置（1.x 格式）
+runner = dict(type='EpochBasedRunner', max_epochs={train_cfg.get('epochs', 300)})
 
-# 训练设置
-train_cfg = dict(type='EpochBasedTrainLoop', max_epochs={train_cfg.get('epochs', 300)}, val_interval=1)
-val_cfg = dict(type='ValLoop')
-test_cfg = dict(type='TestLoop')
+# 评估配置（1.x 格式）
+evaluation = dict(interval=10, metric='mAP')
 
-# 随机种子
-randomness = dict(seed={seed})
+# 日志配置
+log_level = 'INFO'
+log_config = dict(
+    interval=50,
+    hooks=[
+        dict(type='TextLoggerHook'),
+        dict(type='TensorboardLoggerHook')
+    ])
+
+# 随机种子（1.x 系统格式）
+seed = {seed}
 '''
-    
+
     with open(config_path, 'w', encoding='utf-8') as f:
         f.write(config_content)
-    
+
     print(f"✅ 配置文件已创建: {config_path}")
 
 
 def main():
     args = parse_args()
-    
+
     if not MMRotate_AVAILABLE:
         print("\n❌ 错误：必要的包未安装")
         print("请按照上面的提示安装缺失的包")
         return 1
-    
+
     # 加载 YAML 配置
     yaml_config = load_yaml_config(args.config)
-    
+
     # 检查并创建 mmrotate 配置文件
     mmrotate_config_path = Path(args.mmrotate_config)
     create_mmrotate_config_if_not_exists(mmrotate_config_path, yaml_config, args.seed)
-    
+
     if not mmrotate_config_path.exists():
         print(f"❌ 错误：mmrotate 配置文件不存在: {mmrotate_config_path}")
         return 1
-    
+
+    # 导入 mmrotate 和 mmdet 模块以注册所有类（必须在加载配置之前）
+    # mmrotate 0.3.4 版本需要导入所有必要的模块来触发注册
+    import mmdet  # 先导入 mmdet 以初始化注册表
+    import mmrotate
+    # 导入所有子模块以触发注册
+    import mmrotate.models
+    import mmrotate.models.detectors
+    import mmrotate.datasets
+    import mmrotate.core  # 注册核心组件（bbox_coder 等）
+
+    # 尝试导入所有子模块（如果存在）
+    try:
+        import mmrotate.models.roi_heads  # 注册 ROI head
+        import mmrotate.models.roi_heads.bbox_heads  # 注册 bbox head
+        import mmrotate.models.roi_heads.roi_extractors  # 注册 ROI extractor
+    except ImportError:
+        pass
+
+    try:
+        import mmrotate.core.bbox  # 注册 bbox 相关组件
+        import mmrotate.core.bbox.coder  # 注册 bbox coder
+    except ImportError:
+        pass
+
+    # 显式导入所有必要的类以触发注册装饰器
+    try:
+        from mmrotate.models.detectors.oriented_rcnn import OrientedRCNN
+        print("✅ 导入 OrientedRCNN")
+    except ImportError:
+        print("⚠️  警告：无法导入 OrientedRCNN")
+
+    try:
+        from mmrotate.core.bbox.coder import DeltaXYWHTRBBoxCoder, MidpointOffsetCoder
+        print("✅ 导入 bbox coders")
+    except ImportError:
+        try:
+            from mmrotate.core.bbox import DeltaXYWHTRBBoxCoder, MidpointOffsetCoder
+            print("✅ 导入 bbox coders（从 core.bbox）")
+        except ImportError:
+            print("⚠️  警告：无法导入 bbox coders")
+
+    try:
+        from mmrotate.models.roi_heads.bbox_heads import RotatedShared2FCBBoxHead
+        from mmrotate.models.roi_heads import OrientedStandardRoIHead
+        from mmrotate.models.roi_heads.roi_extractors import RotatedSingleRoIExtractor
+        print("✅ 导入 ROI head 组件")
+    except ImportError:
+        print("⚠️  警告：无法导入 ROI head 组件")
+
+    try:
+        from mmrotate.models.rpn_heads import OrientedRPNHead
+        print("✅ 导入 OrientedRPNHead")
+    except ImportError:
+        try:
+            from mmrotate.models.detectors import OrientedRPNHead
+            print("✅ 导入 OrientedRPNHead（从 detectors）")
+        except ImportError:
+            print("⚠️  警告：无法导入 OrientedRPNHead")
+
     # 加载 mmrotate 配置
     cfg = Config.fromfile(str(mmrotate_config_path))
-    
+
     # 设置工作目录
     if args.work_dir:
         cfg.work_dir = args.work_dir
     else:
         cfg.work_dir = f'work_dirs/{yaml_config.get("name", "oriented_rcnn_dota")}'
-    
+
     # 设置设备
-    cfg.device = f'cuda:{args.device}'
-    
-    # 设置随机种子
+    # cfg.device = f'cuda:{args.device}'
+    cfg.device = 'cuda'
+
+    # 设置随机种子（通过配置设置，不需要 set_random_seed 函数）
     if args.seed:
-        set_random_seed(args.seed, deterministic=True)
         cfg.randomness = dict(seed=args.seed, deterministic=True)
-    
+
     # 恢复训练
     if args.resume:
         cfg.resume = True
         cfg.load_from = args.resume
-    
+
     print("="*60)
     print("Oriented R-CNN 训练配置")
     print("="*60)
@@ -427,14 +494,124 @@ def main():
     print(f"工作目录: {cfg.work_dir}")
     print(f"设备: {cfg.device}")
     print(f"随机种子: {args.seed}")
+
     print(f"训练轮数: {cfg.train_cfg.max_epochs}")
     print(f"批次大小: {cfg.train_dataloader.batch_size}")
     print("="*60)
-    
-    # 创建 Runner 并开始训练
-    runner = Runner.from_cfg(cfg)
-    runner.train()
-    
+
+    # 手动注册所有必要的组件到注册表
+    # 因为 mmrotate 0.3.4 的注册表可能没有正确初始化
+    from mmengine.registry import MODELS
+    from mmrotate.core.bbox.builder import ROTATED_BBOX_CODERS
+    from mmrotate.models.builder import ROTATED_HEADS
+
+    # 注册 OrientedRCNN
+    try:
+        from mmrotate.models.detectors.oriented_rcnn import OrientedRCNN
+        if 'OrientedRCNN' not in MODELS:
+            MODELS.register_module(name='OrientedRCNN', module=OrientedRCNN)
+            print("✅ 手动注册 OrientedRCNN 到注册表")
+    except Exception as e:
+        print(f"⚠️  警告：注册 OrientedRCNN 失败: {e}")
+
+    # 注册 DeltaXYWHTRBBoxCoder
+    try:
+        from mmrotate.core.bbox.coder import DeltaXYWHTRBBoxCoder
+        if 'DeltaXYWHTRBBoxCoder' not in ROTATED_BBOX_CODERS:
+            ROTATED_BBOX_CODERS.register_module(name='DeltaXYWHTRBBoxCoder', module=DeltaXYWHTRBBoxCoder)
+            print("✅ 手动注册 DeltaXYWHTRBBoxCoder 到注册表")
+    except Exception as e:
+        try:
+            from mmrotate.core.bbox import DeltaXYWHTRBBoxCoder
+            if 'DeltaXYWHTRBBoxCoder' not in ROTATED_BBOX_CODERS:
+                ROTATED_BBOX_CODERS.register_module(name='DeltaXYWHTRBBoxCoder', module=DeltaXYWHTRBBoxCoder)
+                print("✅ 手动注册 DeltaXYWHTRBBoxCoder 到注册表")
+        except Exception as e2:
+            print(f"⚠️  警告：注册 DeltaXYWHTRBBoxCoder 失败: {e2}")
+
+    # 注册 RotatedShared2FCBBoxHead
+    try:
+        from mmrotate.models.roi_heads.bbox_heads import RotatedShared2FCBBoxHead
+        if 'RotatedShared2FCBBoxHead' not in ROTATED_HEADS:
+            ROTATED_HEADS.register_module(name='RotatedShared2FCBBoxHead', module=RotatedShared2FCBBoxHead)
+            print("✅ 手动注册 RotatedShared2FCBBoxHead 到注册表")
+    except Exception as e:
+        print(f"⚠️  警告：注册 RotatedShared2FCBBoxHead 失败: {e}")
+
+    # 注册 OrientedStandardRoIHead
+    try:
+        from mmrotate.models.roi_heads import OrientedStandardRoIHead
+        if 'OrientedStandardRoIHead' not in ROTATED_HEADS:
+            ROTATED_HEADS.register_module(name='OrientedStandardRoIHead', module=OrientedStandardRoIHead)
+            print("✅ 手动注册 OrientedStandardRoIHead 到注册表")
+    except Exception as e:
+        print(f"⚠️  警告：注册 OrientedStandardRoIHead 失败: {e}")
+
+    # 注册其他必要的组件
+    try:
+        from mmrotate.models.roi_heads.roi_extractors import RotatedSingleRoIExtractor
+        from mmcv.utils.registry import ROTATED_ROI_EXTRACTORS
+        if 'RotatedSingleRoIExtractor' not in ROTATED_ROI_EXTRACTORS:
+            ROTATED_ROI_EXTRACTORS.register_module(name='RotatedSingleRoIExtractor', module=RotatedSingleRoIExtractor)
+            print("✅ 手动注册 RotatedSingleRoIExtractor 到注册表")
+    except Exception as e:
+        pass
+
+    try:
+        from mmrotate.models.rpn_heads import OrientedRPNHead
+        from mmcv.utils.registry import RPN_HEADS
+        if 'OrientedRPNHead' not in RPN_HEADS:
+            RPN_HEADS.register_module(name='OrientedRPNHead', module=OrientedRPNHead)
+            print("✅ 手动注册 OrientedRPNHead 到注册表")
+    except Exception as e:
+        pass
+
+    try:
+        from mmrotate.core.bbox.coder import MidpointOffsetCoder
+        if 'MidpointOffsetCoder' not in ROTATED_BBOX_CODERS:
+            ROTATED_BBOX_CODERS.register_module(name='MidpointOffsetCoder', module=MidpointOffsetCoder)
+            print("✅ 手动注册 MidpointOffsetCoder 到注册表")
+    except Exception as e:
+        pass
+
+    # 使用 mmdet 的 train_detector API 进行训练（1.x 系统）
+    from mmdet.apis import train_detector
+    from mmdet.datasets import build_dataset
+    from mmdet.models import build_detector
+
+    # 确保配置中有必要的字段（1.x 系统格式）
+    if not hasattr(cfg, 'log_level') or getattr(cfg, 'log_level', None) is None:
+        cfg.log_level = 'INFO'
+
+    if not hasattr(cfg, 'runner') or getattr(cfg, 'runner', None) is None:
+        # 1.x 系统使用 EpochBasedRunner
+        max_epochs = 300
+        if hasattr(cfg, 'runner') and isinstance(cfg.runner, dict):
+            max_epochs = cfg.runner.get('max_epochs', 300)
+        cfg.runner = dict(type='EpochBasedRunner', max_epochs=max_epochs)
+
+    if not hasattr(cfg, 'log_config') or getattr(cfg, 'log_config', None) is None:
+        cfg.log_config = dict(
+            interval=50,
+            hooks=[
+                dict(type='TextLoggerHook'),
+                dict(type='TensorboardLoggerHook')
+            ])
+
+    # 1.x 系统：构建数据集和模型
+    datasets = [build_dataset(cfg.data.train)]
+    model = build_detector(cfg.model)
+    model.init_weights()
+
+    # 开始训练（1.x 系统 API）
+    train_detector(
+        model=model,
+        dataset=datasets,
+        cfg=cfg,
+        distributed=False,
+        validate=bool(cfg.get('evaluation', None))
+    )
+
     print("\n✅ 训练完成！")
     print(f"📁 结果保存在: {cfg.work_dir}")
     
