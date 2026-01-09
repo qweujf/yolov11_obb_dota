@@ -7,6 +7,10 @@ from typing import Any, Dict, Optional
 # 设置环境变量禁用自动下载（必须在导入 YOLO 之前）
 os.environ["YOLO_OFFLINE"] = "True"
 
+root_path = str(Path(__file__).parents[2])
+if root_path not in sys.path:
+    sys.path.append(root_path)
+
 from ultralytics import YOLO
 
 
