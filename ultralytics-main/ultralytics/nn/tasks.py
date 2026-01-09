@@ -46,6 +46,7 @@ from ultralytics.nn.modules import (
     Conv,
     Conv2,
     ConvTranspose,
+    DFC_Attention,
     Detect,
     DWConv,
     DWConvTranspose2d,
@@ -1653,6 +1654,7 @@ def parse_model(d, ch, verbose=True):
             SCDown,
             C2fCIB,
             A2C2f,
+            DFC_Attention,
         }
     )
     repeat_modules = frozenset(  # modules with 'repeat' arguments
@@ -1709,6 +1711,9 @@ def parse_model(d, ch, verbose=True):
                     args.extend((True, 1.2))
             if m is C2fCIB:
                 legacy = False
+            if m is DFC_Attention:
+                # DFC_Attention only needs input channels (c1), ignore c2
+                args = [c1] + args[2:] if len(args) > 1 else [c1]
         elif m is AIFI:
             args = [ch[f], *args]
         elif m in frozenset({HGStem, HGBlock}):

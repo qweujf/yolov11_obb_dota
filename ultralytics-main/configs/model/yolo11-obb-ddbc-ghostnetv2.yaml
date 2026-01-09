@@ -15,15 +15,9 @@ scales:
   x: [1.00, 1.50, 512]
 
 # GhostNetV2 Backbone (complete replacement)
-<<<<<<< HEAD
 # Structure: Conv → GhostConv → C3Ghost → DFC Attention → 
 #            GhostConv → C3Ghost → DFC Attention → 
 #            GhostConv → C3Ghost → DFC Attention → 
-=======
-# Structure: Conv → GhostConv → C3Ghost → DFC Attention →
-#            GhostConv → C3Ghost → DFC Attention →
-#            GhostConv → C3Ghost → DFC Attention →
->>>>>>> 4d07d26c089b937eb89d2e0aa0f5c29599bcaf65
 #            GhostConv → SPPF → C2PSA
 # Output scales: P2/4, P3/8, P4/16, P5/32
 backbone:
@@ -68,9 +62,4 @@ head:
   - [-1, 2, C3k2, [1024, True]]                  # 25 (P5/32-large)
 
   # OBB detection head on three scales (P3/P4/P5)
-<<<<<<< HEAD
   - [[19, 22, 25], 1, OBB, [nc, 1]]              # 26: Detect on P3, P4, P5
-
-=======
-  - [[19, 22, 25], 1, OBB, [nc, 1]]              # 26: Detect on P3, P4, P5
->>>>>>> 4d07d26c089b937eb89d2e0aa0f5c29599bcaf65

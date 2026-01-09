@@ -422,8 +422,12 @@ class DFC_Attention(nn.Module):
         # Transpose: (B, C, H, W) -> (B, H, W, C) for FC operation
         x_transposed = x.permute(0, 2, 3, 1).contiguous()  # (B, H, W, C)
         x_h_flat = x_transposed.view(B * H, W, C)  # (B*H, W, C)
-        # Apply FC: (B*H, W, C) -> (B*H, W, C)
-        x_h_fc = self.fc_h(x_h_flat)
+        # Reshape for FC: (B*H, W, C) -> (B*H*W, C) for linear layer
+        x_h_flat_fc = x_h_flat.view(-1, C)  # (B*H*W, C)
+        # Apply FC: (B*H*W, C) -> (B*H*W, C)
+        x_h_fc = self.fc_h(x_h_flat_fc)
+        # Reshape back: (B*H*W, C) -> (B*H, W, C)
+        x_h_fc = x_h_fc.view(B * H, W, C)
         # Get attention weights: (B*H, W, C)
         w_h = torch.sigmoid(x_h_fc)
         # Reshape back: (B*H, W, C) -> (B, H, W, C) -> (B, C, H, W)
@@ -435,8 +439,12 @@ class DFC_Attention(nn.Module):
         # (B, C, H, W) -> (B, W, H, C) for FC operation
         x_h_transposed = x_h.permute(0, 3, 2, 1).contiguous()  # (B, W, H, C)
         x_v_flat = x_h_transposed.view(B * W, H, C)  # (B*W, H, C)
-        # Apply FC: (B*W, H, C) -> (B*W, H, C)
-        x_v_fc = self.fc_v(x_v_flat)
+        # Reshape for FC: (B*W, H, C) -> (B*W*H, C) for linear layer
+        x_v_flat_fc = x_v_flat.view(-1, C)  # (B*W*H, C)
+        # Apply FC: (B*W*H, C) -> (B*W*H, C)
+        x_v_fc = self.fc_v(x_v_flat_fc)
+        # Reshape back: (B*W*H, C) -> (B*W, H, C)
+        x_v_fc = x_v_fc.view(B * W, H, C)
         # Get attention weights: (B*W, H, C)
         w_v = torch.sigmoid(x_v_fc)
         # Reshape back: (B*W, H, C) -> (B, W, H, C) -> (B, C, H, W)
