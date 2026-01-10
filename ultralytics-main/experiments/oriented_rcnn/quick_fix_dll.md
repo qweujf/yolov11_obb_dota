@@ -67,3 +67,4 @@ python -c "from mmrotate.apis import init_detector; print('✅ mmrotate 导入�
 
 
 
+
