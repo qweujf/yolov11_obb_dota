@@ -24,6 +24,8 @@ __all__ = (
     "RepConv",
     "Index",
     "DFC_Attention",
+    "SE",
+    "MBConv",
 )
 
 
@@ -797,3 +799,138 @@ class Index(nn.Module):
             (torch.Tensor): Selected tensor.
         """
         return x[self.index]
+
+
+class SE(nn.Module):
+    """
+    Squeeze-and-Excitation (SE) attention module.
+    
+    SE模块通过显式建模通道间的相互依赖关系来增强模型对关键信息的感知能力。
+    核心流程包括"压缩（Squeeze）"与"激励（Excitation）"两个阶段。
+    
+    Attributes:
+        c1 (int): 输入通道数
+        reduction (int): 通道压缩比，默认16
+        fc1 (nn.Linear): 第一个全连接层
+        fc2 (nn.Linear): 第二个全连接层
+        act (nn.Module): 激活函数
+    """
+    
+    def __init__(self, c1, reduction=16):
+        """
+        Initialize SE module.
+        
+        Args:
+            c1 (int): Number of input channels.
+            reduction (int): Channel reduction ratio, default 16.
+        """
+        super().__init__()
+        self.c1 = c1
+        self.reduction = reduction
+        c2 = max(1, c1 // reduction)
+        self.fc1 = nn.Linear(c1, c2)
+        self.fc2 = nn.Linear(c2, c1)
+        self.act = nn.ReLU()
+        self.sigmoid = nn.Sigmoid()
+    
+    def forward(self, x):
+        """
+        Apply SE attention to input tensor.
+        
+        Args:
+            x (torch.Tensor): Input tensor of shape (B, C, H, W).
+        
+        Returns:
+            (torch.Tensor): Output tensor with channel attention applied.
+        """
+        B, C, H, W = x.shape
+        # Squeeze: Global Average Pooling
+        y = torch.mean(x, dim=[2, 3], keepdim=False)  # (B, C)
+        # Excitation: Two FC layers
+        y = self.fc1(y)  # (B, C//r)
+        y = self.act(y)
+        y = self.fc2(y)  # (B, C)
+        y = self.sigmoid(y)  # (B, C)
+        # Scale: Apply channel weights
+        y = y.view(B, C, 1, 1)  # (B, C, 1, 1)
+        return x * y
+
+
+class MBConv(nn.Module):
+    """
+    Mobile Inverted Bottleneck Convolution (MBConv) module.
+    
+    MBConv是EfficientNet系列网络的核心模块，通过倒残差结构（Inverted Residual）
+    与深度可分离卷积（Depthwise Separable Convolution）的组合，削减计算负载。
+    模块采用"扩展-深度卷积-压缩"的三阶段设计。
+    
+    Attributes:
+        c1 (int): 输入通道数
+        c2 (int): 输出通道数
+        expand_ratio (int): 扩张系数 k，默认3
+        se (bool): 是否使用SE注意力模块
+        hidden_dim (int): 隐藏层通道数（扩展后）
+    """
+    
+    def __init__(self, c1, c2, expand_ratio=3, se=False, act=True):
+        """
+        Initialize MBConv module.
+        
+        Args:
+            c1 (int): Number of input channels.
+            c2 (int): Number of output channels.
+            expand_ratio (int): Expansion ratio k, default 3.
+            se (bool): Whether to use SE attention module, default False.
+            act (bool): Whether to use activation, default True.
+        """
+        super().__init__()
+        self.c1 = c1
+        self.c2 = c2
+        self.expand_ratio = expand_ratio
+        self.se = se
+        self.hidden_dim = c1 * expand_ratio
+        
+        # 1x1 point-wise convolution (expansion)
+        self.expand_conv = Conv(c1, self.hidden_dim, 1, act=act) if expand_ratio != 1 else nn.Identity()
+        
+        # 3x3 depth-wise convolution
+        self.dw_conv = DWConv(self.hidden_dim, self.hidden_dim, 3, act=act)
+        
+        # SE attention (optional)
+        self.se_module = SE(self.hidden_dim) if se else nn.Identity()
+        
+        # 1x1 point-wise convolution (projection)
+        self.project_conv = Conv(self.hidden_dim, c2, 1, act=False)
+        
+        # Residual connection (only when input and output channels match)
+        self.use_residual = (c1 == c2)
+    
+    def forward(self, x):
+        """
+        Apply MBConv transformation to input tensor.
+        
+        Args:
+            x (torch.Tensor): Input tensor of shape (B, C1, H, W).
+        
+        Returns:
+            (torch.Tensor): Output tensor of shape (B, C2, H, W).
+        """
+        identity = x
+        
+        # Expansion
+        x = self.expand_conv(x)
+        
+        # Depth-wise convolution
+        x = self.dw_conv(x)
+        
+        # SE attention
+        x = self.se_module(x)
+        
+        # Projection
+        x = self.project_conv(x)
+        
+        # Residual connection
+        if self.use_residual:
+            x = x + identity
+        
+        return x

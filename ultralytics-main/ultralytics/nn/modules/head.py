@@ -14,7 +14,7 @@ from ultralytics.utils.tal import TORCH_1_10, dist2bbox, dist2rbox, make_anchors
 from ultralytics.utils.torch_utils import fuse_conv_and_bn, smart_inference_mode
 
 from .block import DFL, SAVPE, BNContrastiveHead, ContrastiveHead, Proto, Residual, SwiGLUFFN
-from .conv import Conv, DWConv
+from .conv import Conv, DWConv, MBConv
 from .transformer import MLP, DeformableTransformerDecoder, DeformableTransformerDecoderLayer
 from .utils import bias_init_with_prob, linear_init
 
@@ -1226,3 +1226,170 @@ class v10Detect(Detect):
     def fuse(self):
         """Remove the one2many head for inference optimization."""
         self.cv2 = self.cv3 = nn.ModuleList([nn.Identity()] * self.nl)
+
+
+class OBB_MBConv(OBB):
+    """
+    YOLO OBB detection head with MBConv modules.
+    
+    This class extends the OBB head to use MBConv modules in classification and regression branches,
+    with optional SE attention modules based on configuration.
+    
+    Attributes:
+        cls_se (bool): Whether classification branch uses SE attention.
+        reg_se (bool): Whether regression branch uses SE attention.
+        expand_ratio (int): MBConv expansion ratio k.
+        reg_replace_layers (int): Number of layers to replace in regression branch (default 2, only first two layers).
+    """
+    
+    def __init__(self, nc: int = 80, ne: int = 1, cls_se: bool = False, reg_se: bool = True, 
+                 expand_ratio: int = 3, reg_replace_layers: int = 2, ch: Tuple = ()):
+        """
+        Initialize OBB_MBConv with specified parameters.
+        
+        Args:
+            nc (int): Number of classes.
+            ne (int): Number of extra parameters (angle prediction).
+            cls_se (bool): Whether classification branch uses SE attention.
+            reg_se (bool): Whether regression branch uses SE attention.
+            expand_ratio (int): MBConv expansion ratio k, default 3.
+            reg_replace_layers (int): Number of layers to replace in regression branch, default 2.
+            ch (tuple): Tuple of channel sizes from backbone feature maps.
+        """
+        # Initialize Detect base class attributes
+        nn.Module.__init__(self)
+        self.nc = nc
+        self.nl = len(ch)
+        self.reg_max = 16
+        self.no = nc + self.reg_max * 4
+        self.stride = torch.zeros(self.nl)
+        self.ne = ne
+        self.cls_se = cls_se
+        self.reg_se = reg_se
+        self.expand_ratio = expand_ratio
+        self.reg_replace_layers = reg_replace_layers
+        
+        # Channel dimensions
+        c2 = max((16, ch[0] // 4, self.reg_max * 4))  # regression branch channels
+        c3 = max(ch[0], min(self.nc, 100))  # classification branch channels
+        c4 = max(ch[0] // 4, self.ne)  # angle branch channels
+        
+        # Regression branch (cv2): MBConv with optional SE
+        # Structure: MBConv (with/without SE) -> MBConv (with/without SE) -> Standard Conv (last layer)
+        self.cv2 = nn.ModuleList()
+        for x in ch:
+            layers = []
+            # First layer: MBConv (if reg_replace_layers >= 1)
+            if self.reg_replace_layers >= 1:
+                layers.append(MBConv(x, c2, expand_ratio=expand_ratio, se=reg_se))
+            else:
+                layers.append(Conv(x, c2, 3))
+            
+            # Second layer: MBConv (if reg_replace_layers >= 2)
+            if self.reg_replace_layers >= 2:
+                layers.append(MBConv(c2, c2, expand_ratio=expand_ratio, se=reg_se))
+            else:
+                layers.append(Conv(c2, c2, 3))
+            
+            # Last layer: Always standard Conv (for robustness)
+            layers.append(nn.Conv2d(c2, 4 * self.reg_max, 1))
+            self.cv2.append(nn.Sequential(*layers))
+        
+        # Classification branch (cv3): MBConv with optional SE
+        # Structure: MBConv (with/without SE) -> MBConv (with/without SE) -> Conv (1x1 output)
+        self.cv3 = nn.ModuleList()
+        for x in ch:
+            layers = []
+            # First layer: MBConv
+            layers.append(MBConv(x, x, expand_ratio=expand_ratio, se=cls_se))
+            layers.append(Conv(x, c3, 1))
+            
+            # Second layer: MBConv
+            layers.append(MBConv(c3, c3, expand_ratio=expand_ratio, se=cls_se))
+            layers.append(Conv(c3, c3, 1))
+            
+            # Last layer: Output
+            layers.append(nn.Conv2d(c3, self.nc, 1))
+            self.cv3.append(nn.Sequential(*layers))
+        
+        # Angle branch (cv4): Keep standard Conv structure (same as OBB)
+        self.cv4 = nn.ModuleList(
+            nn.Sequential(Conv(x, c4, 3), Conv(c4, c4, 3), nn.Conv2d(c4, self.ne, 1)) for x in ch
+        )
+        
+        # DFL layer
+        self.dfl = DFL(self.reg_max) if self.reg_max > 1 else nn.Identity()
+        
+        # Legacy and other attributes from Detect
+        self.legacy = False
+        self.xyxy = False
+        self.dynamic = False
+        self.export = False
+        self.format = None
+        self.end2end = False
+        self.max_det = 300
+        self.shape = None
+        self.anchors = torch.empty(0)
+        self.strides = torch.empty(0)
+        self.inplace = False
+    
+    def forward(self, x: List[torch.Tensor]) -> Union[torch.Tensor, Tuple]:
+        """Concatenate and return predicted bounding boxes and class probabilities."""
+        bs = x[0].shape[0]  # batch size
+        angle = torch.cat([self.cv4[i](x[i]).view(bs, self.ne, -1) for i in range(self.nl)], 2)  # OBB theta logits
+        # NOTE: set `angle` as an attribute so that `decode_bboxes` could use it.
+        angle = (angle.sigmoid() - 0.25) * math.pi  # [-pi/4, 3pi/4]
+        if not self.training:
+            self.angle = angle
+        
+        # Use Detect's forward logic
+        for i in range(self.nl):
+            x[i] = torch.cat((self.cv2[i](x[i]), self.cv3[i](x[i])), 1)
+        if self.training:  # Training path
+            return x, angle
+        y = self._inference(x)
+        return torch.cat([y, angle], 1) if self.export else (torch.cat([y[0], angle], 1), (y[1], angle))
+    
+    def _inference(self, x: List[torch.Tensor]) -> torch.Tensor:
+        """
+        Decode predicted bounding boxes and class probabilities based on multiple-level feature maps.
+        
+        Args:
+            x (List[torch.Tensor]): List of feature maps from different detection layers.
+        
+        Returns:
+            (torch.Tensor): Concatenated tensor of decoded bounding boxes and class probabilities.
+        """
+        # Inference path (same as Detect._inference)
+        shape = x[0].shape  # BCHW
+        x_cat = torch.cat([xi.view(shape[0], self.no, -1) for xi in x], 2)
+        if self.format != "imx" and (self.dynamic or self.shape != shape):
+            self.anchors, self.strides = (x.transpose(0, 1) for x in make_anchors(x, self.stride, 0.5))
+            self.shape = shape
+        
+        if self.export and self.format in {"saved_model", "pb", "tflite", "edgetpu", "tfjs"}:  # avoid TF FlexSplitV ops
+            box = x_cat[:, : self.reg_max * 4]
+            cls = x_cat[:, self.reg_max * 4 :]
+        else:
+            box, cls = x_cat.split((self.reg_max * 4, self.nc), 1)
+        
+        if self.export and self.format in {"tflite", "edgetpu"}:
+            # Precompute normalization factor to increase numerical stability
+            grid_h = shape[2]
+            grid_w = shape[3]
+            grid_size = torch.tensor([grid_w, grid_h, grid_w, grid_h], device=box.device).reshape(1, 4, 1)
+            norm = self.strides / (self.stride[0] * grid_size)
+            dbox = self.decode_bboxes(self.dfl(box) * norm, self.anchors.unsqueeze(0) * norm[:, :2])
+        elif self.export and self.format == "imx":
+            dbox = self.decode_bboxes(
+                self.dfl(box) * self.strides, self.anchors.unsqueeze(0) * self.strides, xywh=False
+            )
+            return dbox.transpose(1, 2), cls.sigmoid().permute(0, 2, 1)
+        else:
+            dbox = self.decode_bboxes(self.dfl(box), self.anchors.unsqueeze(0)) * self.strides
+        
+        return torch.cat((dbox, cls.sigmoid()), 1)
+    
+    def decode_bboxes(self, bboxes: torch.Tensor, anchors: torch.Tensor, xywh: bool = True) -> torch.Tensor:
+        """Decode rotated bounding boxes."""
+        return dist2rbox(bboxes, self.angle, anchors, dim=1)

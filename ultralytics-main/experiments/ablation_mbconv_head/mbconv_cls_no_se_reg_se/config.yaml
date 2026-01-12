@@ -1,0 +1,24 @@
+# MBConv 检测头消融实验配置
+# 配置：MBConv（分类无SE，回归有SE）
+# - 分类分支：MBConv（无 SE，扩张系数 k=3）
+# - 回归分支：MBConv（有 SE，扩张系数 k=3，仅替换前两层）
+# 说明：这是推荐的配置（与 mbconv_reg_se 相同）
+
+# 实验名称
+name: yolo_ddbc_ghostnetv2_mbconv_cls_no_se_reg_se
+
+# 使用 GhostNetV2 骨干网络 + MBConv 检测头（分类无SE，回归有SE）配置
+# 骨干网络：GhostNetV2
+# 检测头：MBConv（分类无SE，回归有SE）
+model: configs/model/yolo11-obb-ddbc-ghostnetv2-mbconv-cls-no-se-reg-se.yaml
+
+# 训练参数
+train:
+  project: runs/obb/ablation_mbconv_head
+  name: mbconv_cls_no_se_reg_se
+  epochs: 300
+  batch: 4
+  imgsz: 1024
+  device: 0
+  # 其他参数使用默认配置
+
