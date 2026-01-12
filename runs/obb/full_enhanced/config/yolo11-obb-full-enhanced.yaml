@@ -1,0 +1,61 @@
+# Ultralytics 🚀 AGPL-3.0 License
+# YOLO11-OBB Full Enhanced Model
+# Combines: C3k2_ROAM + SFE_DRB + AFA + RAL Loss
+# Baseline + C3k2_ROAM (backbone) + SFE_DRB (backbone) + AFA (head) + RAL Loss (training)
+
+nc: 18  # DOTA-v2.0 classes
+scales:
+  n: [0.50, 0.25, 1024]
+  s: [0.50, 0.50, 1024]
+  m: [0.50, 1.00, 512]
+  l: [1.00, 1.00, 512]
+  x: [1.00, 1.50, 512]
+
+backbone:
+  # [from, repeats, module, args]
+  - [-1, 1, Conv, [64, 3, 2]]       # 0-P1/2
+  - [-1, 1, Conv, [128, 3, 2]]      # 1-P2/4
+  - [-1, 2, C3k2_ROAM, [256, False, 0.25]]  # 2: C3k2_ROAM module
+  # SFE-DRB #1 at P3/8 uses P2/4 (idx 1) as high-res input
+  - [[-1, 1], 1, SFE_DRB, [256, True]]   # 3: SFE_DRB module
+  - [-1, 1, Conv, [256, 3, 2]]      # 4-P3/8
+  - [-1, 2, C3k2_ROAM, [512, False, 0.25]]  # 5: C3k2_ROAM module
+  # SFE-DRB #2 at P4/16 uses P3/8 (idx 4) as high-res input
+  - [[-1, 4], 1, SFE_DRB, [512, True]]   # 6: SFE_DRB module
+  - [-1, 1, Conv, [512, 3, 2]]      # 7-P4/16
+  - [-1, 2, C3k2_ROAM, [512, True]]  # 8: C3k2_ROAM module
+  # SFE-DRB #3 at P4/16 uses P3/8 (idx 4) as high-res input
+  - [[-1, 4], 1, SFE_DRB, [512, True]]   # 9: SFE_DRB module
+  - [-1, 1, Conv, [1024, 3, 2]]     # 10-P5/32
+  - [-1, 2, C3k2_ROAM, [1024, True]]  # 11: C3k2_ROAM module
+  - [-1, 1, SPPF, [1024, 5]]        # 12
+  - [-1, 2, C2PSA, [1024]]          # 13
+  # SFE-DRB #4 at P5/32 uses P4/16 (idx 7) as high-res input
+  - [[-1, 7], 1, SFE_DRB, [1024, True]]  # 14: SFE_DRB module
+
+head:
+  # Head 结构改回标准 FPN（去掉 AFA，对齐方式与 baseline 一致）
+  # 使用 backbone 输出的 P5(idx 14), P4(idx 7), P3(idx 4)
+
+  # 上采样 P5，与 P4 拼接
+  - [-1, 1, nn.Upsample, [None, 2, "nearest"]]   # 15
+  - [[-1, 7], 1, Concat, [1]]                    # 16: cat backbone P4
+  - [-1, 2, C3k2, [512, False]]                  # 17 (FPN P4)
+
+  # 上采样 P4，与 P3 拼接
+  - [-1, 1, nn.Upsample, [None, 2, "nearest"]]   # 18
+  - [[-1, 4], 1, Concat, [1]]                    # 19: cat backbone P3
+  - [-1, 2, C3k2, [256, False]]                  # 20 (P3/8-small)
+
+  # 下采样 P3，与 P4 拼接
+  - [-1, 1, Conv, [256, 3, 2]]                   # 21
+  - [[-1, 17], 1, Concat, [1]]                   # 22: cat head P4
+  - [-1, 2, C3k2, [512, False]]                  # 23 (P4/16-medium)
+
+  # 下采样 P4，与 P5 拼接
+  - [-1, 1, Conv, [512, 3, 2]]                   # 24
+  - [[-1, 14], 1, Concat, [1]]                   # 25: cat backbone P5
+  - [-1, 2, C3k2, [1024, True]]                  # 26 (P5/32-large)
+
+  - [[20, 23, 26], 1, OBB, [nc, 1]]              # 27 Detect(P3, P4, P5)
+

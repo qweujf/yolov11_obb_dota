@@ -1,0 +1,449 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1091</width>
+    <height>884</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">/* 全局背景与文字颜色 */
+QMainWindow {
+    background-color: #1e1e1e;
+    color: #ffffff;
+}
+
+/* 侧边栏样式：深灰色背景，右侧带一条细边框 */
+QFrame#side_bar {
+    background-color: #2b2b2b;
+    border-right: 1px solid #3d3d3d;
+}
+
+/* 按钮样式：扁平化、圆角、青蓝色文字 */
+QPushButton {
+    background-color: #3d3d3d;
+    border: 1px solid #4d4d4d;
+    border-radius: 4px;
+    padding: 8px;
+    color: #00d4ff;
+    font-family: &quot;Segoe UI&quot;, &quot;Microsoft YaHei&quot;;
+    font-size: 14px;
+}
+
+QPushButton:hover {
+    background-color: #4d4d4d;
+    border: 1px solid #00d4ff;
+}
+
+/* 滑动条样式微调 */
+QSlider::handle:horizontal {
+    background: #00d4ff;
+    width: 14px;
+    margin: -5px 0;
+    border-radius: 7px;
+}</string>
+  </property>
+  <property name="windowFilePath">
+   <string>QMainWindow { background-color: #2b2b2b; color: white; }\nQGroupBox { border: 1px solid #5e5e5e; margin-top: 10px; color: #00d4ff; }\nQPushButton { background-color: #3d3d3d; border-radius: 5px; padding: 5px; color: white; }\nQPushButton:hover { background-color: #007acc; }</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <widget class="QLabel" name="label">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>10</y>
+      <width>181</width>
+      <height>501</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background-color: rgb(217, 217, 217);</string>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pushButton">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>40</y>
+      <width>159</width>
+      <height>34</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background-color: rgb(187, 212, 239);
+font: 12pt &quot;Times New Roman&quot;;
+font: 12pt &quot;宋体&quot;;
+color:rgb(0, 0, 0);
+font-weight: bold;</string>
+    </property>
+    <property name="text">
+     <string>加载图像</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_2">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>520</y>
+      <width>1071</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background-color: #d8e7f0;
+font: 12pt &quot;Times New Roman&quot;;
+font: 12pt &quot;宋体&quot;;
+color:rgb(0, 0, 0);
+font-weight: bold;</string>
+    </property>
+    <property name="text">
+     <string> 检测结果：共检测到  个类别，  个目标</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pushButton_5">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>120</y>
+      <width>159</width>
+      <height>34</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background-color: rgb(187, 212, 239);
+font: 12pt &quot;Times New Roman&quot;;
+font: 12pt &quot;宋体&quot;;
+color:rgb(0, 0, 0);
+font-weight: bold;</string>
+    </property>
+    <property name="text">
+     <string>加载模型</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pushButton_6">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>360</y>
+      <width>159</width>
+      <height>34</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background-color: rgb(187, 212, 239);
+font: 12pt &quot;Times New Roman&quot;;
+font: 12pt &quot;宋体&quot;;
+color:rgb(0, 0, 0);
+font-weight: bold;</string>
+    </property>
+    <property name="text">
+     <string>开始检测</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pushButton_7">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>450</y>
+      <width>159</width>
+      <height>34</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background-color: rgb(187, 212, 239);
+font: 12pt &quot;Times New Roman&quot;;
+font: 12pt &quot;宋体&quot;;
+color:rgb(0, 0, 0);
+font-weight: bold;</string>
+    </property>
+    <property name="text">
+     <string>结果导出</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_3">
+    <property name="geometry">
+     <rect>
+      <x>200</x>
+      <y>10</y>
+      <width>881</width>
+      <height>501</height>
+     </rect>
+    </property>
+    <property name="mouseTracking">
+     <bool>false</bool>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background-color: rgb(216, 231, 240);
+font: 25pt &quot;Times New Roman&quot;;
+font: 25pt &quot;宋体&quot;;
+color:rgb(0,0,0);
+font-weight: bold;</string>
+    </property>
+    <property name="text">
+     <string>图像显示</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QTableWidget" name="tableWidget">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>551</y>
+      <width>1071</width>
+      <height>131</height>
+     </rect>
+    </property>
+    <property name="mouseTracking">
+     <bool>false</bool>
+    </property>
+    <property name="tabletTracking">
+     <bool>false</bool>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">/* 美化表头：实现加粗及中英文字体兼容 */
+QHeaderView::section {
+    background-color: #f0f0f0;
+    padding: 2px;
+    border: 1px solid #dcdcdc;
+    /* 使用复合简写属性：粗细 字符大小 字体家族 */
+    font: bold 12pt &quot;Times New Roman&quot;, &quot;宋体&quot;;
+    color: #333333;
+}
+
+/* 统一表格内容风格 */
+QTableWidget {
+    background-color: #ffffff;
+    gridline-color: #dcdcdc;
+    border: 1px solid #bcbcbc;
+    selection-background-color: #0078d7;
+    /* 内容部分建议不加粗，以区分表头 */
+    font: 12pt &quot;Times New Roman&quot;, &quot;宋体&quot;;
+}</string>
+    </property>
+    <property name="gridStyle">
+     <enum>Qt::SolidLine</enum>
+    </property>
+    <attribute name="horizontalHeaderMinimumSectionSize">
+     <number>25</number>
+    </attribute>
+    <attribute name="horizontalHeaderDefaultSectionSize">
+     <number>150</number>
+    </attribute>
+    <attribute name="horizontalHeaderHighlightSections">
+     <bool>false</bool>
+    </attribute>
+    <attribute name="horizontalHeaderStretchLastSection">
+     <bool>true</bool>
+    </attribute>
+    <attribute name="verticalHeaderVisible">
+     <bool>false</bool>
+    </attribute>
+    <attribute name="verticalHeaderStretchLastSection">
+     <bool>false</bool>
+    </attribute>
+    <row>
+     <property name="text">
+      <string>新建行</string>
+     </property>
+    </row>
+    <row>
+     <property name="text">
+      <string>新建行</string>
+     </property>
+    </row>
+    <row>
+     <property name="text">
+      <string>新建行</string>
+     </property>
+    </row>
+    <column>
+     <property name="text">
+      <string>序号</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>类别</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>置信度</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>中心点X坐标</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>中心点Y坐标</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>宽度</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>高度</string>
+     </property>
+    </column>
+   </widget>
+   <widget class="QSlider" name="horizontalSlider">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>200</y>
+      <width>141</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">/* 设置滑动条的凹槽（背景长条） */
+QSlider::groove:horizontal {
+    height: 8px; /* 凹槽的高度 */
+    background: rgb(255, 255, 255);
+    border-radius: 4px;
+}
+
+/* 设置滑钮（中间那个圆块）的大小 */
+QSlider::handle:horizontal {
+    background: rgb(187, 212, 239); /* 滑钮颜色 */
+    width: 20px;         /* 关键属性：调节宽度 */
+    height: 20px;        /* 关键属性：调节高度 */
+    margin: -7px 0;      /* 关键技巧：负边距让滑钮垂直居中并突出凹槽 */
+    border-radius: 10px; /* 圆角：设为宽高的一半即为圆形 */
+    border: 1px solid rgb(187, 212, 239);
+}</string>
+    </property>
+    <property name="orientation">
+     <enum>Qt::Horizontal</enum>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_4">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>220</y>
+      <width>181</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background-color: rgb(217, 217, 217);
+font: 12pt &quot;Times New Roman&quot;;
+font: 12pt &quot;宋体&quot;;
+color:rgb(0, 0, 0);
+font-weight: bold;</string>
+    </property>
+    <property name="text">
+     <string>置信度阈值：0</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_5">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>300</y>
+      <width>181</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background-color: rgb(217, 217, 217);
+font: 12pt &quot;Times New Roman&quot;;
+font: 12pt &quot;宋体&quot;;
+color:rgb(0, 0, 0);
+font-weight: bold;</string>
+    </property>
+    <property name="text">
+     <string>NMS阈值：0</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QSlider" name="horizontalSlider_2">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>280</y>
+      <width>141</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">/* 设置滑动条的凹槽（背景长条） */
+QSlider::groove:horizontal {
+    height: 8px; /* 凹槽的高度 */
+    background: rgb(255, 255, 255);
+    border-radius: 4px;
+}
+
+/* 设置滑钮（中间那个圆块）的大小 */
+QSlider::handle:horizontal {
+    background: rgb(187, 212, 239); /* 滑钮颜色 */
+    width: 20px;         /* 关键属性：调节宽度 */
+    height: 20px;        /* 关键属性：调节高度 */
+    margin: -7px 0;      /* 关键技巧：负边距让滑钮垂直居中并突出凹槽 */
+    border-radius: 10px; /* 圆角：设为宽高的一半即为圆形 */
+    border: 1px solid rgb(187, 212, 239);
+}</string>
+    </property>
+    <property name="orientation">
+     <enum>Qt::Horizontal</enum>
+    </property>
+   </widget>
+   <widget class="QWidget" name="widget" native="true">
+    <property name="geometry">
+     <rect>
+      <x>-1</x>
+      <y>-1</y>
+      <width>1091</width>
+      <height>691</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">background-color: #ffffff</string>
+    </property>
+   </widget>
+   <zorder>widget</zorder>
+   <zorder>label</zorder>
+   <zorder>pushButton</zorder>
+   <zorder>label_2</zorder>
+   <zorder>pushButton_5</zorder>
+   <zorder>pushButton_6</zorder>
+   <zorder>pushButton_7</zorder>
+   <zorder>label_3</zorder>
+   <zorder>tableWidget</zorder>
+   <zorder>horizontalSlider</zorder>
+   <zorder>label_4</zorder>
+   <zorder>label_5</zorder>
+   <zorder>horizontalSlider_2</zorder>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
