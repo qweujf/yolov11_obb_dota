@@ -123,8 +123,8 @@ def main() -> None:
                         cache_file.unlink()
                         print(f"  ✅ 已删除损坏的缓存: {cache_file.name}")
     
-    # 7. 构建模型
-    model = YOLO(model_path)
+    # 7. 构建模型（明确指定任务类型为OBB）
+    model = YOLO(model_path, task='obb')
     
     # 8. 设置 data 路径（训练时必需，必须在构建模型之后）
     cfg["data"] = data_path
