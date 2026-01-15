@@ -351,7 +351,15 @@ def model_info(model, detailed=False, verbose=True, imgsz=640):
 
     flops = get_flops(model, imgsz)  # imgsz may be int or list, i.e. imgsz=640 or imgsz=[640, 320]
     fused = " (fused)" if getattr(model, "is_fused", lambda: False)() else ""
-    fs = f", {flops:.1f} GFLOPs" if flops else ""
+    if flops and flops > 0:
+        fs = f", {flops:.1f} GFLOPs"
+    else:
+        # 如果计算失败，给出提示
+        try:
+            import thop
+            fs = " (GFLOPs calculation failed, try: pip install thop)"
+        except ImportError:
+            fs = " (GFLOPs not available, install thop: pip install thop)"
     yaml_file = getattr(model, "yaml_file", "") or getattr(model, "yaml", {}).get("yaml_file", "")
     model_name = Path(yaml_file).stem.replace("yolo", "YOLO") or "Model"
     LOGGER.info(f"{model_name} summary{fused}: {n_l:,} layers, {n_p:,} parameters, {n_g:,} gradients{fs}")
@@ -415,7 +423,7 @@ def get_flops(model, imgsz=640):
         imgsz (int | list, optional): Input image size.
 
     Returns:
-        (float): The model FLOPs in billions.
+        (float): The model FLOPs in billions. Returns 0.0 if calculation fails.
     """
     try:
         import thop
@@ -436,10 +444,14 @@ def get_flops(model, imgsz=640):
             im = torch.empty((1, p.shape[1], stride, stride), device=p.device)  # input image in BCHW format
             flops = thop.profile(deepcopy(model), inputs=[im], verbose=False)[0] / 1e9 * 2  # stride GFLOPs
             return flops * imgsz[0] / stride * imgsz[1] / stride  # imgsz GFLOPs
-        except Exception:
+        except Exception as e:
             # Method 2: Use actual image size (required for RTDETR models)
-            im = torch.empty((1, p.shape[1], *imgsz), device=p.device)  # input image in BCHW format
-            return thop.profile(deepcopy(model), inputs=[im], verbose=False)[0] / 1e9 * 2  # imgsz GFLOPs
+            try:
+                im = torch.empty((1, p.shape[1], *imgsz), device=p.device)  # input image in BCHW format
+                return thop.profile(deepcopy(model), inputs=[im], verbose=False)[0] / 1e9 * 2  # imgsz GFLOPs
+            except Exception:
+                # 如果两种方法都失败，返回 0.0（会在 model_info 中显示提示）
+                return 0.0
     except Exception:
         return 0.0
 

@@ -373,6 +373,9 @@ class OBB(Detect):
                 channel_mask = (channel_importance >= self.dynamic_activation_threshold).float()  # (B, C)
                 channel_mask = channel_mask.unsqueeze(2).unsqueeze(3)  # (B, C, 1, 1) 用于广播
                 
+                # 确保 mask 与输入张量的数据类型和设备一致
+                channel_mask = channel_mask.to(dtype=xi.dtype, device=xi.device)
+                
                 # 应用 mask：关闭低权重通道（将通道置零）
                 xi_activated = xi * channel_mask
                 
