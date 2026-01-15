@@ -287,11 +287,15 @@ class OBB(Detect):
     YOLO OBB detection head for detection with rotation models.
 
     This class extends the Detect head to include oriented bounding box prediction with rotation angles.
+    Supports dynamic channel activation for runtime pruning.
 
     Attributes:
         ne (int): Number of extra parameters.
         cv4 (nn.ModuleList): Convolution layers for angle prediction.
         angle (torch.Tensor): Predicted rotation angles.
+        use_dynamic_activation (bool): Whether to use dynamic channel activation.
+        dynamic_activation_threshold (float): Threshold for dynamic channel activation.
+        gate_branches (nn.ModuleList): Gate branches for channel importance prediction.
 
     Methods:
         forward: Concatenate and return predicted bounding boxes and class probabilities.
@@ -304,7 +308,7 @@ class OBB(Detect):
         >>> outputs = obb(x)
     """
 
-    def __init__(self, nc: int = 80, ne: int = 1, ch: Tuple = ()):
+    def __init__(self, nc: int = 80, ne: int = 1, ch: Tuple = (), dynamic_activation_threshold: Optional[float] = None):
         """
         Initialize OBB with number of classes `nc` and layer channels `ch`.
 
@@ -312,16 +316,69 @@ class OBB(Detect):
             nc (int): Number of classes.
             ne (int): Number of extra parameters.
             ch (tuple): Tuple of channel sizes from backbone feature maps.
+            dynamic_activation_threshold (float, optional): Threshold for dynamic channel activation.
+                If None, will try to read from environment variable DYNAMIC_ACTIVATION_THRESHOLD.
         """
         super().__init__(nc, ch)
         self.ne = ne  # number of extra parameters
+
+        # 动态通道激活相关
+        if dynamic_activation_threshold is None:
+            # 尝试从环境变量读取阈值
+            import os
+            threshold_str = os.environ.get("DYNAMIC_ACTIVATION_THRESHOLD")
+            if threshold_str:
+                try:
+                    dynamic_activation_threshold = float(threshold_str)
+                except ValueError:
+                    dynamic_activation_threshold = None
+        
+        self.use_dynamic_activation = dynamic_activation_threshold is not None
+        self.dynamic_activation_threshold = dynamic_activation_threshold if self.use_dynamic_activation else None
+        
+        if self.use_dynamic_activation:
+            # 门控分支：1×1 卷积 + Sigmoid，用于预测通道重要性
+            # 对每个尺度的特征图都添加门控分支
+            self.gate_branches = nn.ModuleList(
+                nn.Sequential(
+                    nn.Conv2d(x, x, 1, 1, 0, bias=True),  # 1×1 卷积
+                    nn.Sigmoid()  # 归一化到 [0, 1]
+                ) for x in ch
+            )
+        else:
+            self.gate_branches = None
 
         c4 = max(ch[0] // 4, self.ne)
         self.cv4 = nn.ModuleList(nn.Sequential(Conv(x, c4, 3), Conv(c4, c4, 3), nn.Conv2d(c4, self.ne, 1)) for x in ch)
 
     def forward(self, x: List[torch.Tensor]) -> Union[torch.Tensor, Tuple]:
-        """Concatenate and return predicted bounding boxes and class probabilities."""
+        """
+        Concatenate and return predicted bounding boxes and class probabilities.
+        Supports dynamic channel activation during inference.
+        """
         bs = x[0].shape[0]  # batch size
+        
+        # 动态通道激活（仅在推理时生效）
+        if self.use_dynamic_activation and not self.training and self.gate_branches is not None:
+            x_activated = []
+            for i, xi in enumerate(x):
+                # 计算通道权重（通过门控分支）
+                gate_weights = self.gate_branches[i](xi)  # (B, C, H, W)
+                
+                # 计算每个通道的平均激活强度（空间维度上平均）
+                channel_importance = gate_weights.mean(dim=[2, 3])  # (B, C)
+                
+                # 根据阈值决定哪些通道激活
+                # 创建 mask: 1 表示激活，0 表示关闭
+                channel_mask = (channel_importance >= self.dynamic_activation_threshold).float()  # (B, C)
+                channel_mask = channel_mask.unsqueeze(2).unsqueeze(3)  # (B, C, 1, 1) 用于广播
+                
+                # 应用 mask：关闭低权重通道（将通道置零）
+                xi_activated = xi * channel_mask
+                
+                x_activated.append(xi_activated)
+            x = x_activated
+        
         angle = torch.cat([self.cv4[i](x[i]).view(bs, self.ne, -1) for i in range(self.nl)], 2)  # OBB theta logits
         # NOTE: set `angle` as an attribute so that `decode_bboxes` could use it.
         angle = (angle.sigmoid() - 0.25) * math.pi  # [-pi/4, 3pi/4]
