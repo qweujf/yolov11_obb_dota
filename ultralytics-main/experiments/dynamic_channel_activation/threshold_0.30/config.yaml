@@ -13,7 +13,8 @@ data: configs/data/dota_obb.yaml
 # 训练参数（可根据需要调整）
 train:
   epochs: 300
-  batch: 16
+  batch: 4
+  workers: 4           # Dataloader 线程数（1024图像较大，减少workers避免内存不足）
   imgsz: 1024
   device: 0
   lr0: 0.01
