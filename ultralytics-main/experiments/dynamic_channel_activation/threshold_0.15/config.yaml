@@ -1,0 +1,27 @@
+# 动态通道激活阈值实验配置（τ = 0.15）
+# 基于 YOLOv11n-OBB 模型
+
+# 实验名称
+name: dynamic_activation_threshold_0.15
+
+# 模型配置（使用标准 YOLOv11n-OBB，动态激活阈值在模型代码中设置）
+model: configs/model/yolov11_obb.yaml
+
+# 数据配置
+data: configs/data/dota_obb.yaml
+
+# 训练参数（可根据需要调整）
+train:
+  epochs: 300
+  batch: 16
+  imgsz: 1024
+  device: 0
+  lr0: 0.01
+  optimizer: auto
+  project: runs/obb/dynamic_activation
+  name: threshold_0.15
+
+# 注意：动态通道激活阈值 τ = 0.15 需要在模型代码中实现
+# 可以通过环境变量或模型参数传递，例如：
+# 在 train.py 中设置: os.environ["DYNAMIC_ACTIVATION_THRESHOLD"] = "0.15"
+
