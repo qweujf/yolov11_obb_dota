@@ -8,6 +8,11 @@ from typing import Any, Dict, Optional
 # 如果你本地/远端已经缓存了权重文件，则不会触发下载；否则训练可能需要联网或先手动准备权重。
 os.environ["YOLO_OFFLINE"] = "True"
 
+# 将仓库根目录加入 sys.path，确保能导入本地 ultralytics-main/ultralytics
+root_path = str(Path(__file__).resolve().parents[2])
+if root_path not in sys.path:
+    sys.path.append(root_path)
+
 from ultralytics import YOLO
 
 
