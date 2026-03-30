@@ -1,0 +1,5 @@
+# YOLO11s-OBB 对比实验配置
+# 使用 DOTAv2.0 数据集，与 YOLO_DDGC / YOLO_GRL 实验保持一致
+
+name: yolo11s_obb_dota
+
